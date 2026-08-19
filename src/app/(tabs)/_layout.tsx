@@ -9,7 +9,6 @@ export default function TabsLayout() {
 
   if (loading) return null;
   if (!user) return <Redirect href="/login" />;
-
   return (
     <Tabs
       screenOptions={{
