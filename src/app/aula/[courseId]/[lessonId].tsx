@@ -1,18 +1,22 @@
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, Text, View, StyleSheet, ScrollView } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, Text, TextInput, View, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, AlertCircle, Heart } from 'lucide-react-native';
+import { BookOpen, CheckCircle2, Clock, AlertCircle, Heart } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { coursesApi } from '@/lib/features';
+import { tapLight, success } from '@/lib/haptics';
 import type { LessonDetail } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 type LessonResponse = {
   lesson: LessonDetail & { isFavorite?: boolean; note?: string | null };
@@ -21,14 +25,17 @@ type LessonResponse = {
 };
 
 export default function AulaPlayerScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const { courseId, lessonId } = useLocalSearchParams<{ courseId: string; lessonId: string }>();
   const token = useToken();
   const router = useRouter();
   const [lesson, setLesson] = useState<LessonDetail | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
+  const [note, setNote] = useState('');
   const [error, setError] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
   const [favoriting, setFavoriting] = useState(false);
 
   useEffect(() => {
@@ -42,7 +49,7 @@ export default function AulaPlayerScreen() {
           data.isFavorite ?? data.lesson?.isFavorite ?? false;
         setIsFavorite(fav);
         const lessonNote = data.note ?? data.lesson?.note ?? null;
-        setNote(typeof lessonNote === 'string' ? lessonNote : null);
+        setNote(typeof lessonNote === 'string' ? lessonNote : '');
       })
       .catch(() => setError(true));
   }, [token, courseId, lessonId]);
@@ -52,6 +59,7 @@ export default function AulaPlayerScreen() {
     const previous = isFavorite;
     setIsFavorite(!previous);
     setFavoriting(true);
+    void tapLight();
     coursesApi(token)
       .toggleFavorite(String(courseId), String(lessonId))
       .then((res) => {
@@ -64,12 +72,28 @@ export default function AulaPlayerScreen() {
       .finally(() => setFavoriting(false));
   };
 
+  const handleSaveNote = () => {
+    if (!token || !courseId || !lessonId || savingNote) return;
+    setSavingNote(true);
+    coursesApi(token)
+      .saveNote(String(courseId), String(lessonId), note)
+      .then((res) => {
+        if (typeof res?.note === 'string') setNote(res.note);
+        Alert.alert('Sucesso', 'Anotação salva!');
+      })
+      .catch(() => {
+        Alert.alert('Erro', 'Não foi possível salvar a anotação. Tente novamente.');
+      })
+      .finally(() => setSavingNote(false));
+  };
+
   const handleComplete = () => {
     if (!token || !courseId || !lessonId || completing) return;
     setCompleting(true);
     coursesApi(token)
       .completeLesson(String(courseId), String(lessonId))
       .then(() => {
+        void success();
         Alert.alert('Aula concluída', 'Progresso salvo com sucesso!', [
           { text: 'OK', onPress: () => router.back() },
         ]);
@@ -104,13 +128,13 @@ export default function AulaPlayerScreen() {
   return (
     <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-          >
-            <ArrowLeft size={20} color={Palette.text} />
-          </Pressable>
+        <View style={styles.topBar}>
+          <View style={styles.topBarHeader}>
+            <PageHeader
+              title={title}
+              subtitle={orderNumber != null ? `Aula ${orderNumber}` : undefined}
+            />
+          </View>
           <Pressable
             onPress={handleToggleFavorite}
             accessibilityLabel={isFavorite ? 'Remover dos favoritos' : 'Favoritar aula'}
@@ -118,8 +142,8 @@ export default function AulaPlayerScreen() {
           >
             <Heart
               size={20}
-              color={isFavorite ? Palette.red : Palette.textMuted}
-              fill={isFavorite ? Palette.red : 'transparent'}
+              color={isFavorite ? P.red : P.textMuted}
+              fill={isFavorite ? P.red : 'transparent'}
             />
           </Pressable>
         </View>
@@ -130,14 +154,26 @@ export default function AulaPlayerScreen() {
           </View>
         ) : null}
 
-        {note ? (
-          <View style={styles.noteWrapper}>
-            <Card>
-              <Text style={styles.noteTitle}>Suas anotações</Text>
-              <Text style={styles.noteText}>{note}</Text>
-            </Card>
-          </View>
-        ) : null}
+        <View style={styles.noteWrapper}>
+          <Card style={styles.noteCard}>
+            <Text style={styles.noteTitle}>Suas anotações</Text>
+            <TextInput
+              style={styles.noteInput}
+              placeholder="Escreva suas anotações da aula..."
+              placeholderTextColor={P.textSubtle}
+              value={note}
+              onChangeText={setNote}
+              multiline
+              textAlignVertical="top"
+            />
+            <Button
+              size="sm"
+              label="Salvar anotação"
+              loading={savingNote}
+              onPress={handleSaveNote}
+            />
+          </Card>
+        </View>
 
         <View style={styles.info}>
           {orderNumber != null ? <Text style={styles.order}>Aula {orderNumber}</Text> : null}
@@ -146,12 +182,12 @@ export default function AulaPlayerScreen() {
           <View style={styles.metaRow}>
             {duration != null ? (
               <View style={styles.metaItem}>
-                <Clock size={14} color={Palette.textMuted} />
+                <Clock size={14} color={P.textMuted} />
                 <Text style={styles.metaText}>{duration} min</Text>
               </View>
             ) : null}
             <View style={styles.metaItem}>
-              <BookOpen size={14} color={Palette.textMuted} />
+              <BookOpen size={14} color={P.textMuted} />
               <Text style={styles.metaText}>Aula</Text>
             </View>
           </View>
@@ -179,6 +215,8 @@ export default function AulaPlayerScreen() {
 }
 
 function LessonVideo({ videoUrl }: { videoUrl: string }) {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const player = useVideoPlayer(videoUrl, (p) => {
     p.play();
   });
@@ -186,24 +224,14 @@ function LessonVideo({ videoUrl }: { videoUrl: string }) {
   return <VideoView player={player} style={styles.video} contentFit="contain" nativeControls />;
 }
 
-const styles = StyleSheet.create({
-  header: {
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+  topBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.md,
+    alignItems: 'flex-start',
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Palette.surface,
-    borderWidth: 1,
-    borderColor: Palette.border,
+  topBarHeader: {
+    flex: 1,
   },
   favBtn: {
     width: 36,
@@ -211,9 +239,11 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.surface,
+    backgroundColor: P.surface,
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: P.border,
+    marginTop: Spacing.sm,
+    marginRight: Spacing.lg,
   },
   videoContainer: {
     width: '100%',
@@ -229,16 +259,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
   },
+  noteCard: {
+    gap: Spacing.sm,
+  },
   noteTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: Palette.text,
+    color: P.text,
     marginBottom: 6,
   },
-  noteText: {
+  noteInput: {
+    minHeight: 100,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: P.border,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    padding: 12,
+    color: P.text,
     fontSize: 14,
-    color: Palette.textMuted,
     lineHeight: 21,
+    textAlignVertical: 'top',
   },
   info: {
     padding: Spacing.lg,
@@ -247,14 +287,14 @@ const styles = StyleSheet.create({
   order: {
     fontSize: 12,
     fontWeight: '800',
-    color: Palette.highlight,
+    color: P.highlight,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   title: {
     fontSize: 22,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
     lineHeight: 28,
   },
   metaRow: {
@@ -269,16 +309,17 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   description: {
     fontSize: 14,
-    color: Palette.textMuted,
+    color: P.textMuted,
     lineHeight: 21,
   },
   content: {
     fontSize: 14,
-    color: Palette.text,
+    color: P.text,
     lineHeight: 21,
   },
-});
+  });
+}

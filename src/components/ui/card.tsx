@@ -1,7 +1,8 @@
 import type { PropsWithChildren } from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { Palette, Radius, shadow } from '@/constants/theme';
+import { Radius, shadow } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
 
 export type CardProps = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
@@ -9,12 +10,13 @@ export type CardProps = PropsWithChildren<{
 }>;
 
 export function Card({ children, style, onPress }: CardProps) {
+  const P = usePalette();
   const cardStyle: StyleProp<ViewStyle> = [
     {
       borderRadius: Radius.lg,
       borderWidth: 1,
-      borderColor: Palette.border,
-      backgroundColor: Palette.card,
+      borderColor: P.border,
+      backgroundColor: P.card,
       padding: 16,
       ...shadow,
     },

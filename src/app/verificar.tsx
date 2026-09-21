@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { Pressable, Text, View, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Calendar, Hash, Search, ShieldCheck, XCircle } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
+import { Text, View, StyleSheet } from 'react-native';
+import { Calendar, Hash, Search, ShieldCheck, XCircle } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { api } from '@/lib/api';
@@ -10,7 +9,10 @@ import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return null;
@@ -20,8 +22,9 @@ function formatDate(iso: string | null | undefined) {
 }
 
 export default function VerificarScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
-  const router = useRouter();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerifiedCertificate | null>(null);
@@ -59,18 +62,7 @@ export default function VerificarScreen() {
 
   return (
     <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-          >
-            <ArrowLeft size={20} color={Palette.text} />
-          </Pressable>
-          <Text style={styles.title}>Verificar</Text>
-        </View>
-        <Text style={styles.subtitle}>Valide a autenticidade de um certificado</Text>
-      </View>
+      <PageHeader title="Verificar" subtitle="Valide a autenticidade de um certificado" />
 
       <View style={styles.body}>
         <Card style={styles.formCard}>
@@ -93,7 +85,7 @@ export default function VerificarScreen() {
           <Card style={styles.successCard}>
             <View style={styles.successHeader}>
               <View style={styles.successIcon}>
-                <ShieldCheck size={22} color={Palette.emerald} />
+                <ShieldCheck size={22} color={P.emerald} />
               </View>
               <Text style={styles.successTitle}>Certificado válido</Text>
             </View>
@@ -103,13 +95,13 @@ export default function VerificarScreen() {
             <View style={styles.certMeta}>
               {issuedAt ? (
                 <View style={styles.metaRow}>
-                  <Calendar size={13} color={Palette.textSubtle} />
+                  <Calendar size={13} color={P.textSubtle} />
                   <Text style={styles.meta}>{issuedAt}</Text>
                 </View>
               ) : null}
               {result.code ?? code.trim() ? (
                 <View style={styles.codeBadge}>
-                  <Hash size={12} color={Palette.emerald} />
+                  <Hash size={12} color={P.emerald} />
                   <Text style={styles.code}>{result.code ?? code.trim()}</Text>
                 </View>
               ) : null}
@@ -119,7 +111,7 @@ export default function VerificarScreen() {
 
         {errorMsg ? (
           <View style={styles.errorBox}>
-            <XCircle size={18} color={Palette.red} />
+            <XCircle size={18} color={P.red} />
             <Text style={styles.errorText}>{errorMsg}</Text>
           </View>
         ) : null}
@@ -128,37 +120,8 @@ export default function VerificarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Palette.surface,
-    borderWidth: 1,
-    borderColor: Palette.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Palette.textMuted,
-    marginTop: Spacing.xs,
-  },
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   body: {
     paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
@@ -189,21 +152,21 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Palette.emerald,
+    color: P.emerald,
   },
   divider: {
     height: 1,
-    backgroundColor: Palette.border,
+    backgroundColor: P.border,
   },
   certTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
     lineHeight: 20,
   },
   certName: {
     fontSize: 13,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   certMeta: {
     flexDirection: 'row',
@@ -217,7 +180,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 12,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
   codeBadge: {
     flexDirection: 'row',
@@ -233,7 +196,7 @@ const styles = StyleSheet.create({
   code: {
     fontSize: 11,
     fontWeight: '700',
-    color: Palette.emerald,
+    color: P.emerald,
     letterSpacing: 0.5,
   },
   errorBox: {
@@ -252,4 +215,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fca5a5',
   },
-});
+  });
+}

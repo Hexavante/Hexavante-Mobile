@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Lock, Trophy } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, Text, View, StyleSheet } from 'react-native';
+import { Lock, Trophy } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { gamificationApi } from '@/lib/features';
@@ -10,7 +9,10 @@ import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return null;
@@ -20,8 +22,9 @@ function formatDate(iso: string | null | undefined) {
 }
 
 export default function ConquistasScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
-  const router = useRouter();
   const [achievements, setAchievements] = useState<Achievement[] | null>(null);
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,7 +46,7 @@ export default function ConquistasScreen() {
   if (error) {
     return (
       <Screen>
-        <Header onBack={() => router.back()} />
+        <PageHeader title="Conquistas" subtitle="Suas medalhas e marcos" />
         <EmptyState
           icon={Trophy}
           title="Não foi possível carregar as conquistas"
@@ -65,12 +68,10 @@ export default function ConquistasScreen() {
         contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 32, gap: Spacing.sm }}
         columnWrapperStyle={{ gap: Spacing.sm }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
         }
         ListHeaderComponent={
-          <>
-            <Header onBack={() => router.back()} />
-          </>
+          <PageHeader title="Conquistas" subtitle="Suas medalhas e marcos" />
         }
         ListEmptyComponent={
           <EmptyState
@@ -92,9 +93,9 @@ export default function ConquistasScreen() {
             >
               <View style={[styles.iconBox, unlocked ? styles.iconBoxUnlocked : null]}>
                 {unlocked ? (
-                  <Trophy size={22} color={Palette.gold} />
+                  <Trophy size={22} color={P.gold} />
                 ) : (
-                  <Lock size={22} color={Palette.textSubtle} />
+                  <Lock size={22} color={P.textSubtle} />
                 )}
               </View>
               <Text style={styles.achTitle} numberOfLines={2}>
@@ -119,54 +120,8 @@ export default function ConquistasScreen() {
   );
 }
 
-function Header({ onBack }: { onBack: () => void }) {
-  return (
-    <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <Pressable
-          onPress={onBack}
-          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-        >
-          <ArrowLeft size={20} color={Palette.text} />
-        </Pressable>
-        <Text style={styles.title}>Conquistas</Text>
-      </View>
-      <Text style={styles.subtitle}>Suas medalhas e marcos</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Palette.surface,
-    borderWidth: 1,
-    borderColor: Palette.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Palette.textMuted,
-    marginTop: Spacing.xs,
-  },
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   card: {
     flex: 1,
     alignItems: 'center',
@@ -174,7 +129,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   cardUnlocked: {
-    borderColor: Palette.highlightBorder,
+    borderColor: P.highlightBorder,
   },
   cardLocked: {},
   iconBox: {
@@ -185,7 +140,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: P.border,
   },
   iconBoxUnlocked: {
     backgroundColor: 'rgba(252,211,77,0.1)',
@@ -194,13 +149,13 @@ const styles = StyleSheet.create({
   achTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: Palette.text,
+    color: P.text,
     textAlign: 'center',
     lineHeight: 17,
   },
   achDesc: {
     fontSize: 11,
-    color: Palette.textMuted,
+    color: P.textMuted,
     textAlign: 'center',
     lineHeight: 15,
   },
@@ -208,17 +163,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: Radius.full,
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
     borderWidth: 1,
-    borderColor: Palette.highlightBorder,
+    borderColor: P.highlightBorder,
   },
   tierText: {
     fontSize: 10,
     fontWeight: '800',
-    color: Palette.highlight,
+    color: P.highlight,
   },
   date: {
     fontSize: 10,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
-});
+  });
+}

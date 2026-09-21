@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Calendar, CircleCheck, History } from 'lucide-react-native';
+import { Calendar, CircleCheck, History } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { examsApi } from '@/lib/features';
@@ -11,7 +11,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -19,13 +22,15 @@ function formatDate(iso: string) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function scoreColor(score: number) {
-  if (score >= 70) return Palette.emerald;
-  if (score >= 50) return Palette.amber;
-  return Palette.red;
+function scoreColor(P: AppPalette, score: number) {
+  if (score >= 70) return P.emerald;
+  if (score >= 50) return P.amber;
+  return P.red;
 }
 
 export default function HistoricoScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
   const router = useRouter();
   const [attempts, setAttempts] = useState<ExamHistoryEntry[] | null>(null);
@@ -68,7 +73,7 @@ export default function HistoricoScreen() {
   if (error) {
     return (
       <Screen>
-        <Header onBack={() => router.back()} />
+        <PageHeader title="Histórico" subtitle="Seus simulados resolvidos" />
         <EmptyState
           icon={History}
           title="Não foi possível carregar o histórico"
@@ -88,12 +93,10 @@ export default function HistoricoScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 32, gap: Spacing.sm }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
         }
         ListHeaderComponent={
-          <>
-            <Header onBack={() => router.back()} />
-          </>
+          <PageHeader title="Histórico" subtitle="Seus simulados resolvidos" />
         }
         ListEmptyComponent={
           <EmptyState
@@ -111,8 +114,8 @@ export default function HistoricoScreen() {
                 </Text>
                 <Text style={styles.examType}>{item.examType}</Text>
               </View>
-              <View style={[styles.scoreBadge, { borderColor: scoreColor(item.score) }]}>
-                <Text style={[styles.score, { color: scoreColor(item.score) }]}>
+              <View style={[styles.scoreBadge, { borderColor: scoreColor(P, item.score) }]}>
+                <Text style={[styles.score, { color: scoreColor(P, item.score) }]}>
                   {Math.round(item.score)}%
                 </Text>
               </View>
@@ -122,13 +125,13 @@ export default function HistoricoScreen() {
 
             <View style={styles.cardBottom}>
               <View style={styles.metaRow}>
-                <CircleCheck size={13} color={Palette.textSubtle} />
+                <CircleCheck size={13} color={P.textSubtle} />
                 <Text style={styles.meta}>
                   {item.correctAnswers}/{item.totalQuestions} acertos
                 </Text>
               </View>
               <View style={styles.metaRow}>
-                <Calendar size={13} color={Palette.textSubtle} />
+                <Calendar size={13} color={P.textSubtle} />
                 <Text style={styles.meta}>{formatDate(item.finishedAt)}</Text>
               </View>
             </View>
@@ -150,54 +153,8 @@ export default function HistoricoScreen() {
   );
 }
 
-function Header({ onBack }: { onBack: () => void }) {
-  return (
-    <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <Pressable
-          onPress={onBack}
-          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-        >
-          <ArrowLeft size={20} color={Palette.text} />
-        </Pressable>
-        <Text style={styles.title}>Histórico</Text>
-      </View>
-      <Text style={styles.subtitle}>Seus simulados resolvidos</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Palette.surface,
-    borderWidth: 1,
-    borderColor: Palette.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Palette.textMuted,
-    marginTop: Spacing.xs,
-  },
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   card: {
     gap: Spacing.md,
   },
@@ -213,12 +170,12 @@ const styles = StyleSheet.create({
   examTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
     lineHeight: 20,
   },
   examType: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   scoreBadge: {
     paddingHorizontal: Spacing.sm,
@@ -234,7 +191,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: Palette.border,
+    backgroundColor: P.border,
   },
   cardBottom: {
     flexDirection: 'row',
@@ -248,6 +205,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 12,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
-});
+  });
+}

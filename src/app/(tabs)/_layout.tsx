@@ -2,9 +2,10 @@ import { Redirect, Tabs } from 'expo-router';
 import { BookOpen, Home, ShoppingCart, Trophy, User } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
-import { Palette } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
 
 export default function TabsLayout() {
+  const P = usePalette();
   const { user, loading } = useAuth();
 
   if (loading) return null;
@@ -13,11 +14,11 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Palette.highlight,
-        tabBarInactiveTintColor: Palette.textSubtle,
+        tabBarActiveTintColor: P.highlight,
+        tabBarInactiveTintColor: P.textSubtle,
         tabBarStyle: {
           backgroundColor: '#0b0e1a',
-          borderTopColor: Palette.border,
+          borderTopColor: P.border,
         },
       }}
     >

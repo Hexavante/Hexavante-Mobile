@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -27,7 +27,9 @@ import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, Radius, Spacing, shadow } from '@/constants/theme';
+import { Radius, Spacing, shadow } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 function toISODate(br: string): string | null {
   const m = br.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -49,6 +51,8 @@ function fromISODate(iso: string | null | undefined): string {
 }
 
 export default function ConfiguracoesScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const { signOut } = useAuth();
   const token = useToken();
   const router = useRouter();
@@ -148,10 +152,10 @@ export default function ConfiguracoesScreen() {
           onPress={() => router.back()}
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
         >
-          <ArrowLeft size={20} color={Palette.text} />
+          <ArrowLeft size={20} color={P.text} />
         </Pressable>
         <View style={styles.headerTitle}>
-          <Settings size={18} color={Palette.highlight} />
+          <Settings size={18} color={P.highlight} />
           <Text style={styles.title}>Configurações</Text>
         </View>
         <View style={{ width: 32 }} />
@@ -159,7 +163,7 @@ export default function ConfiguracoesScreen() {
 
       <Card style={styles.section}>
         <View style={styles.sectionHeader}>
-          <User size={16} color={Palette.highlight} />
+          <User size={16} color={P.highlight} />
           <Text style={styles.sectionTitle}>Dados pessoais</Text>
         </View>
 
@@ -207,7 +211,7 @@ export default function ConfiguracoesScreen() {
 
       <Card style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Mail size={16} color={Palette.sky} />
+          <Mail size={16} color={P.sky} />
           <Text style={styles.sectionTitle}>Conta</Text>
         </View>
 
@@ -227,24 +231,24 @@ export default function ConfiguracoesScreen() {
       {profile?.twoFactorEnabled && (
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Shield size={16} color={Palette.emerald} />
+            <Shield size={16} color={P.emerald} />
             <Text style={styles.sectionTitle}>Segurança</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Autenticação em duas etapas</Text>
-            <Text style={[styles.infoValue, { color: Palette.emerald }]}>Ativada</Text>
+            <Text style={[styles.infoValue, { color: P.emerald }]}>Ativada</Text>
           </View>
         </Card>
       )}
 
       <Card style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Calendar size={16} color={Palette.violet} />
+          <Calendar size={16} color={P.violet} />
           <Text style={styles.sectionTitle}>Plano e moedas</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Moedas</Text>
-          <Text style={[styles.infoValue, { color: Palette.amber }]}>
+          <Text style={[styles.infoValue, { color: P.amber }]}>
             {profile?.coins ?? 0}
           </Text>
         </View>
@@ -268,7 +272,8 @@ export default function ConfiguracoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -291,7 +296,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: Palette.text,
+    color: P.text,
   },
   section: {
     marginBottom: Spacing.lg,
@@ -306,7 +311,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
   },
   field: {
     marginBottom: Spacing.md,
@@ -319,15 +324,16 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 13,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   infoValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: Palette.text,
+    color: P.text,
   },
   divider: {
     height: 1,
-    backgroundColor: Palette.border,
+    backgroundColor: P.border,
   },
-});
+  });
+}

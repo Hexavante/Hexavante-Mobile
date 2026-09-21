@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, View, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, BarChart3, ListChecks, Medal, Target } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Text, View, StyleSheet } from 'react-native';
+import { BarChart3, ListChecks, Medal, Target } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { examsApi } from '@/lib/features';
@@ -10,7 +9,10 @@ import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 type SubjectStat = { subject: string; correct: number; total: number };
 type EvolutionPoint = { date: string; score: number };
@@ -22,8 +24,9 @@ function formatDate(iso: string) {
 }
 
 export default function EstatisticasScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
-  const router = useRouter();
   const [stats, setStats] = useState<ExamStats | null>(null);
   const [subjects, setSubjects] = useState<SubjectStat[]>([]);
   const [evolution, setEvolution] = useState<EvolutionPoint[]>([]);
@@ -50,7 +53,7 @@ export default function EstatisticasScreen() {
   if (error) {
     return (
       <Screen>
-        <Header onBack={() => router.back()} />
+        <PageHeader title="Estatísticas" subtitle="Seu desempenho nos estudos" />
         <EmptyState
           icon={BarChart3}
           title="Não foi possível carregar as estatísticas"
@@ -70,22 +73,22 @@ export default function EstatisticasScreen() {
       refreshing={refreshing}
       onRefresh={load}
     >
-      <Header onBack={() => router.back()} />
+      <PageHeader title="Estatísticas" subtitle="Seu desempenho nos estudos" />
 
       <View style={styles.body}>
         <View style={styles.summaryRow}>
           <Card style={styles.summaryCard}>
-            <ListChecks size={18} color={Palette.highlight} />
+            <ListChecks size={18} color={P.highlight} />
             <Text style={styles.summaryValue}>{stats.totalAttempts ?? 0}</Text>
             <Text style={styles.summaryLabel}>Tentativas</Text>
           </Card>
           <Card style={styles.summaryCard}>
-            <Target size={18} color={Palette.amber} />
+            <Target size={18} color={P.amber} />
             <Text style={styles.summaryValue}>{Math.round(stats.averageScore ?? 0)}%</Text>
             <Text style={styles.summaryLabel}>Média</Text>
           </Card>
           <Card style={styles.summaryCard}>
-            <Medal size={18} color={Palette.emerald} />
+            <Medal size={18} color={P.emerald} />
             <Text style={styles.summaryValue}>{Math.round(stats.bestScore ?? 0)}%</Text>
             <Text style={styles.summaryLabel}>Melhor</Text>
           </Card>
@@ -141,54 +144,8 @@ export default function EstatisticasScreen() {
   );
 }
 
-function Header({ onBack }: { onBack: () => void }) {
-  return (
-    <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <Pressable
-          onPress={onBack}
-          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-        >
-          <ArrowLeft size={20} color={Palette.text} />
-        </Pressable>
-        <Text style={styles.title}>Estatísticas</Text>
-      </View>
-      <Text style={styles.subtitle}>Seu desempenho nos estudos</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Palette.surface,
-    borderWidth: 1,
-    borderColor: Palette.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Palette.textMuted,
-    marginTop: Spacing.xs,
-  },
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   body: {
     paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
@@ -206,17 +163,17 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 20,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
     fontVariant: ['tabular-nums'],
   },
   summaryLabel: {
     fontSize: 11,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: Palette.text,
+    color: P.text,
     marginTop: Spacing.sm,
   },
   listCard: {
@@ -235,12 +192,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '600',
-    color: Palette.text,
+    color: P.text,
   },
   barPct: {
     fontSize: 12,
     fontWeight: '800',
-    color: Palette.highlight,
+    color: P.highlight,
     fontVariant: ['tabular-nums'],
   },
   barTrack: {
@@ -252,7 +209,7 @@ const styles = StyleSheet.create({
   barFill: {
     height: '100%',
     borderRadius: Radius.full,
-    backgroundColor: Palette.highlight,
+    backgroundColor: P.highlight,
   },
   evoRow: {
     flexDirection: 'row',
@@ -261,12 +218,13 @@ const styles = StyleSheet.create({
   },
   evoDate: {
     fontSize: 13,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   evoScore: {
     fontSize: 14,
     fontWeight: '800',
-    color: Palette.text,
+    color: P.text,
     fontVariant: ['tabular-nums'],
   },
-});
+  });
+}

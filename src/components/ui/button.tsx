@@ -8,7 +8,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Palette, Radius } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -21,16 +23,18 @@ export type ButtonProps = PressableProps & {
   style?: StyleProp<ViewStyle>;
 };
 
-const VARIANTS: Record<Variant, { bg: string; color: string; border?: string }> = {
-  primary: { bg: Palette.highlight, color: '#062033' },
-  secondary: {
-    bg: 'rgba(255,255,255,0.06)',
-    color: Palette.text,
-    border: Palette.border,
-  },
-  ghost: { bg: 'transparent', color: Palette.textMuted },
-  danger: { bg: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: 'rgba(239,68,68,0.35)' },
-};
+function makeVariants(P: AppPalette): Record<Variant, { bg: string; color: string; border?: string }> {
+  return {
+    primary: { bg: P.highlight, color: '#062033' },
+    secondary: {
+      bg: 'rgba(255,255,255,0.06)',
+      color: P.text,
+      border: P.border,
+    },
+    ghost: { bg: 'transparent', color: P.textMuted },
+    danger: { bg: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: 'rgba(239,68,68,0.35)' },
+  };
+}
 
 const SIZES: Record<Size, { height: number; padding: number; fontSize: number }> = {
   sm: { height: 36, padding: 14, fontSize: 13 },
@@ -42,7 +46,8 @@ export const Button = forwardRef<ViewStyle, ButtonProps>(function Button(
   { variant = 'primary', size = 'md', loading = false, disabled, label, children, style, ...props },
   ref,
 ) {
-  const v = VARIANTS[variant];
+  const P = usePalette();
+  const v = makeVariants(P)[variant];
   const s = SIZES[size];
 
   return (

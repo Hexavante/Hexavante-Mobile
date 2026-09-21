@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,12 +22,15 @@ import {
 
 import { useToken } from '@/hooks/use-token';
 import { api } from '@/lib/api';
+import { tapLight, success } from '@/lib/haptics';
 import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 type Alternative = { id: string; text: string };
 type Question = {
@@ -67,6 +71,8 @@ type ExamInfo = {
 type Mode = 'preview' | 'exam' | 'results';
 
 export default function ExameDetailScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const token = useToken();
 
@@ -161,6 +167,9 @@ export default function ExameDetailScreen() {
       });
       setResult(res);
       setMode('results');
+      if (res.percentage >= 70) {
+        void success();
+      }
       return true;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erro ao enviar';
@@ -195,6 +204,7 @@ export default function ExameDetailScreen() {
   }, [attempt, answers, submitting, doSubmit]);
 
   const selectAlternative = useCallback((questionId: string, altId: string) => {
+    void tapLight();
     setAnswers((prev) => ({ ...prev, [questionId]: altId }));
   }, []);
 
@@ -221,8 +231,13 @@ export default function ExameDetailScreen() {
   if (mode === 'results' && result) {
     return (
       <Screen contentContainerStyle={styles.centerContent}>
+        {result.percentage >= 70 ? (
+          <View pointerEvents="none" style={styles.confettiOverlay}>
+            <ConfettiCannon count={80} origin={{ x: 200, y: 0 }} fadeOut autoStart />
+          </View>
+        ) : null}
         <View style={styles.resultsIcon}>
-          <Trophy size={36} color={Palette.amber} />
+          <Trophy size={36} color={P.amber} />
         </View>
         <Text style={styles.resultsTitle}>Resultado</Text>
 
@@ -232,19 +247,19 @@ export default function ExameDetailScreen() {
 
           <View style={styles.resultsRow}>
             <View style={styles.resultStat}>
-              <CheckCircle size={18} color={Palette.emerald} />
+              <CheckCircle size={18} color={P.emerald} />
               <Text style={styles.resultStatValue}>{result.correctAnswers}</Text>
               <Text style={styles.resultStatLabel}>acertos</Text>
             </View>
             <View style={styles.resultDivider} />
             <View style={styles.resultStat}>
-              <Circle size={18} color={Palette.textMuted} />
+              <Circle size={18} color={P.textMuted} />
               <Text style={styles.resultStatValue}>{result.totalQuestions}</Text>
               <Text style={styles.resultStatLabel}>total</Text>
             </View>
             <View style={styles.resultDivider} />
             <View style={styles.resultStat}>
-              <FileCheck size={18} color={Palette.violet} />
+              <FileCheck size={18} color={P.violet} />
               <Text style={styles.resultStatValue}>
                 {result.totalQuestions - result.correctAnswers}
               </Text>
@@ -269,12 +284,12 @@ export default function ExameDetailScreen() {
     const total = attempt.questions.length;
     const timerColor =
       secondsLeft === null
-        ? Palette.text
+        ? P.text
         : secondsLeft < 60
-          ? Palette.red
+          ? P.red
           : secondsLeft < 300
-            ? Palette.amber
-            : Palette.text;
+            ? P.amber
+            : P.text;
 
     return (
       <View style={styles.examRoot}>
@@ -321,9 +336,9 @@ export default function ExameDetailScreen() {
                   style={[styles.altBtn, selected && styles.altSelected]}
                 >
                   {selected ? (
-                    <CheckCircle size={20} color={Palette.highlight} />
+                    <CheckCircle size={20} color={P.highlight} />
                   ) : (
-                    <Circle size={20} color={Palette.textMuted} />
+                    <Circle size={20} color={P.textMuted} />
                   )}
                   <Text style={[styles.altText, selected && styles.altTextSelected]}>
                     {alt.text}
@@ -343,7 +358,7 @@ export default function ExameDetailScreen() {
             onPress={() => setCurrentIndex((i) => i - 1)}
             style={styles.navBtn}
           >
-            <ArrowLeft size={16} color={Palette.textMuted} />
+            <ArrowLeft size={16} color={P.textMuted} />
           </Button>
 
           {currentIndex === total - 1 ? (
@@ -365,7 +380,7 @@ export default function ExameDetailScreen() {
               onPress={() => setCurrentIndex((i) => i + 1)}
               style={styles.navBtn}
             >
-              <ArrowRight size={16} color={Palette.text} />
+              <ArrowRight size={16} color={P.text} />
             </Button>
           )}
         </View>
@@ -377,7 +392,7 @@ export default function ExameDetailScreen() {
     <Screen>
       <View style={styles.hero}>
         <View style={styles.iconBox}>
-          <FileCheck size={26} color={Palette.violet} />
+          <FileCheck size={26} color={P.violet} />
         </View>
         <Text style={styles.title}>{exam?.title ?? 'Simulado'}</Text>
         <Text style={styles.subtitle}>
@@ -403,7 +418,8 @@ export default function ExameDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   hero: {
     alignItems: 'center',
     gap: 10,
@@ -423,17 +439,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
-    color: Palette.textMuted,
+    color: P.textMuted,
     textAlign: 'center',
   },
   description: {
     fontSize: 13,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
     textAlign: 'center',
     lineHeight: 19,
     marginTop: 4,
@@ -444,7 +460,7 @@ const styles = StyleSheet.create({
 
   examRoot: {
     flex: 1,
-    backgroundColor: Palette.bg,
+    backgroundColor: P.bg,
   },
   topBar: {
     flexDirection: 'row',
@@ -458,7 +474,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
     marginRight: 12,
   },
   timerBadge: {
@@ -467,7 +483,7 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: P.border,
     borderRadius: Radius.sm,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -481,16 +497,16 @@ const styles = StyleSheet.create({
     height: 3,
     marginHorizontal: 16,
     borderRadius: 2,
-    backgroundColor: Palette.skeleton,
+    backgroundColor: P.skeleton,
   },
   progressInner: {
     height: '100%',
     borderRadius: 2,
-    backgroundColor: Palette.highlight,
+    backgroundColor: P.highlight,
   },
   progressLabel: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 4,
@@ -503,12 +519,12 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: Radius.md,
     marginBottom: 12,
-    backgroundColor: Palette.skeleton,
+    backgroundColor: P.skeleton,
   },
   questionStatement: {
     fontSize: 16,
     fontWeight: '600',
-    color: Palette.text,
+    color: P.text,
     lineHeight: 24,
     marginBottom: 10,
   },
@@ -520,7 +536,7 @@ const styles = StyleSheet.create({
   subjectTag: {
     fontSize: 11,
     fontWeight: '700',
-    color: Palette.violet,
+    color: P.violet,
     backgroundColor: 'rgba(167,139,250,0.12)',
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -530,8 +546,8 @@ const styles = StyleSheet.create({
   pointsTag: {
     fontSize: 11,
     fontWeight: '700',
-    color: Palette.highlight,
-    backgroundColor: Palette.highlightSoft,
+    color: P.highlight,
+    backgroundColor: P.highlightSoft,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.sm,
@@ -546,22 +562,22 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: P.border,
     borderRadius: Radius.md,
     padding: 14,
   },
   altSelected: {
-    backgroundColor: Palette.highlightSoft,
-    borderColor: Palette.highlightBorder,
+    backgroundColor: P.highlightSoft,
+    borderColor: P.highlightBorder,
   },
   altText: {
     flex: 1,
     fontSize: 14,
-    color: Palette.textMuted,
+    color: P.textMuted,
     lineHeight: 20,
   },
   altTextSelected: {
-    color: Palette.text,
+    color: P.text,
     fontWeight: '600',
   },
   bottomBar: {
@@ -571,7 +587,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: Palette.border,
+    borderTopColor: P.border,
   },
   navBtn: {
     minWidth: 120,
@@ -580,6 +596,13 @@ const styles = StyleSheet.create({
   centerContent: {
     alignItems: 'center',
     paddingTop: 32,
+  },
+  confettiOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
   },
   resultsIcon: {
     width: 64,
@@ -595,7 +618,7 @@ const styles = StyleSheet.create({
   resultsTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
     marginBottom: 20,
   },
   resultsCard: {
@@ -607,11 +630,11 @@ const styles = StyleSheet.create({
   percentage: {
     fontSize: 40,
     fontWeight: '900',
-    color: Palette.highlight,
+    color: P.highlight,
   },
   scoreLabel: {
     fontSize: 14,
-    color: Palette.textMuted,
+    color: P.textMuted,
     marginBottom: 4,
   },
   resultsRow: {
@@ -627,19 +650,20 @@ const styles = StyleSheet.create({
   resultStatValue: {
     fontSize: 18,
     fontWeight: '800',
-    color: Palette.text,
+    color: P.text,
   },
   resultStatLabel: {
     fontSize: 11,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
   resultDivider: {
     width: 1,
     height: 32,
-    backgroundColor: Palette.border,
+    backgroundColor: P.border,
   },
   backBtn: {
     marginTop: 20,
     width: '100%',
   },
-});
+  });
+}

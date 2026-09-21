@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Award, ArrowLeft, Calendar, Hash, Tag } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, Text, View, StyleSheet } from 'react-native';
+import { Award, Calendar, Hash, Tag } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { certificatesApi } from '@/lib/features';
@@ -10,7 +9,10 @@ import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -18,8 +20,9 @@ function formatDate(iso: string) {
 }
 
 export default function CertificadosScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
-  const router = useRouter();
   const [certificates, setCertificates] = useState<Certificate[] | null>(null);
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,7 +44,7 @@ export default function CertificadosScreen() {
   if (error) {
     return (
       <Screen>
-        <Header onBack={() => router.back()} />
+        <PageHeader title="Certificados" subtitle="Seus certificados conquistados" />
         <EmptyState
           icon={Award}
           title="Não foi possível carregar os certificados"
@@ -61,12 +64,10 @@ export default function CertificadosScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 32, gap: Spacing.sm }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
         }
         ListHeaderComponent={
-          <>
-            <Header onBack={() => router.back()} />
-          </>
+          <PageHeader title="Certificados" subtitle="Seus certificados conquistados" />
         }
         ListEmptyComponent={
           <EmptyState
@@ -79,14 +80,14 @@ export default function CertificadosScreen() {
           <Card style={styles.card}>
             <View style={styles.cardTop}>
               <View style={styles.iconBox}>
-                <Award size={20} color={Palette.gold} />
+                <Award size={20} color={P.gold} />
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.courseTitle} numberOfLines={2}>
                   {item.course.title}
                 </Text>
                 <View style={styles.tagRow}>
-                  <Tag size={12} color={Palette.textMuted} />
+                  <Tag size={12} color={P.textMuted} />
                   <Text style={styles.category}>{item.course.categoryName}</Text>
                 </View>
               </View>
@@ -96,11 +97,11 @@ export default function CertificadosScreen() {
 
             <View style={styles.cardBottom}>
               <View style={styles.metaRow}>
-                <Calendar size={13} color={Palette.textSubtle} />
+                <Calendar size={13} color={P.textSubtle} />
                 <Text style={styles.date}>{formatDate(item.issuedAt)}</Text>
               </View>
               <View style={styles.codeBadge}>
-                <Hash size={12} color={Palette.highlight} />
+                <Hash size={12} color={P.highlight} />
                 <Text style={styles.code}>{item.code}</Text>
               </View>
             </View>
@@ -111,51 +112,8 @@ export default function CertificadosScreen() {
   );
 }
 
-function Header({ onBack }: { onBack: () => void }) {
-  return (
-    <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <Pressable onPress={onBack} style={styles.backBtn}>
-          <ArrowLeft size={20} color={Palette.text} />
-        </Pressable>
-        <Text style={styles.title}>Certificados</Text>
-      </View>
-      <Text style={styles.subtitle}>Seus certificados conquistados</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Palette.surface,
-    borderWidth: 1,
-    borderColor: Palette.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Palette.textMuted,
-    marginTop: Spacing.xs,
-  },
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   card: {
     gap: Spacing.md,
   },
@@ -180,7 +138,7 @@ const styles = StyleSheet.create({
   courseTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
     lineHeight: 20,
   },
   tagRow: {
@@ -190,11 +148,11 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   divider: {
     height: 1,
-    backgroundColor: Palette.border,
+    backgroundColor: P.border,
   },
   cardBottom: {
     flexDirection: 'row',
@@ -208,7 +166,7 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 12,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
   codeBadge: {
     flexDirection: 'row',
@@ -217,15 +175,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: Radius.full,
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
     borderWidth: 1,
-    borderColor: Palette.highlightBorder,
+    borderColor: P.highlightBorder,
   },
   code: {
     fontSize: 11,
     fontWeight: '700',
-    color: Palette.highlight,
+    color: P.highlight,
     fontVariant: ['tabular-nums'],
     letterSpacing: 0.5,
   },
-});
+  });
+}

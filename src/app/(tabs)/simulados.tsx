@@ -10,9 +10,13 @@ import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export default function SimuladosScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
   const router = useRouter();
   const [exams, setExams] = useState<Exam[] | null>(null);
@@ -63,7 +67,7 @@ export default function SimuladosScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 12 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
         }
         ListHeaderComponent={
           <>
@@ -72,11 +76,11 @@ export default function SimuladosScreen() {
               <Text style={styles.subtitle}>Teste seus conhecimentos</Text>
             </View>
             <View style={styles.searchContainer}>
-              <Search size={18} color={Palette.textSubtle} style={styles.searchIcon} />
+              <Search size={18} color={P.textSubtle} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Buscar simulados..."
-                placeholderTextColor={Palette.textSubtle}
+                placeholderTextColor={P.textSubtle}
                 value={search}
                 onChangeText={setSearch}
                 returnKeyType="search"
@@ -105,7 +109,7 @@ export default function SimuladosScreen() {
             <Card style={styles.card}>
               <View style={styles.topRow}>
                 <View style={styles.iconBox}>
-                  <FileCheck size={20} color={Palette.violet} />
+                    <FileCheck size={20} color={P.violet} />
                 </View>
                 <View style={styles.subjectChip}>
                   <Text style={styles.subjectText}>{item.examType}</Text>
@@ -119,11 +123,11 @@ export default function SimuladosScreen() {
               ) : null}
               <View style={styles.meta}>
                 <View style={styles.metaItem}>
-                  <Layers size={12} color={Palette.textSubtle} />
+                    <Layers size={12} color={P.textSubtle} />
                   <Text style={styles.metaText}>{item.questionCount} questões</Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Clock size={12} color={Palette.textSubtle} />
+                    <Clock size={12} color={P.textSubtle} />
                   <Text style={styles.metaText}>{item.timeLimit} min</Text>
                 </View>
               </View>
@@ -135,94 +139,96 @@ export default function SimuladosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 14,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Palette.textMuted,
-    marginTop: 2,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: Palette.surface,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Palette.border,
-    paddingHorizontal: 12,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    height: 44,
-    color: Palette.text,
-    fontSize: 14,
-    paddingVertical: 0,
-  },
-  card: {
-    gap: 8,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(167,139,250,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.25)',
-  },
-  subjectChip: {
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(167,139,250,0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  subjectText: {
-    color: Palette.violet,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Palette.text,
-  },
-  cardDesc: {
-    fontSize: 12,
-    color: Palette.textMuted,
-    lineHeight: 17,
-  },
-  meta: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 2,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 11,
-    color: Palette.textSubtle,
-  },
-});
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+    header: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 14,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '900',
+      color: P.text,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: P.textMuted,
+      marginTop: 2,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: 16,
+      marginBottom: 12,
+      backgroundColor: P.surface,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: P.border,
+      paddingHorizontal: 12,
+    },
+    searchIcon: {
+      marginRight: 8,
+    },
+    searchInput: {
+      flex: 1,
+      height: 44,
+      color: P.text,
+      fontSize: 14,
+      paddingVertical: 0,
+    },
+    card: {
+      gap: 8,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    iconBox: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(167,139,250,0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(167,139,250,0.25)',
+    },
+    subjectChip: {
+      borderRadius: Radius.full,
+      backgroundColor: 'rgba(167,139,250,0.1)',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    subjectText: {
+      color: P.violet,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: P.text,
+    },
+    cardDesc: {
+      fontSize: 12,
+      color: P.textMuted,
+      lineHeight: 17,
+    },
+    meta: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 2,
+    },
+    metaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    metaText: {
+      fontSize: 11,
+      color: P.textSubtle,
+    },
+  });
+}

@@ -3,13 +3,18 @@ import { Image, KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'r
 import { Link } from 'expo-router';
 
 import { useAuth } from '@/lib/auth-context';
+import { errorFeedback } from '@/lib/haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { VerifyCodeForm } from '@/components/auth/verify-code';
-import { Palette, Radius } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export default function LoginScreen() {
+  const P = usePalette();
+  const styles = makeStyles(P);
   const { signIn, pendingVerification } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +24,7 @@ export default function LoginScreen() {
   const handleSubmit = async () => {
     if (!email || !password) {
       setError('Preencha e-mail e senha.');
+      void errorFeedback();
       return;
     }
     setLoading(true);
@@ -26,6 +32,7 @@ export default function LoginScreen() {
     try {
       await signIn(email.trim(), password);
     } catch (e) {
+      void errorFeedback();
       setError(e instanceof Error ? e.message : 'Falha ao entrar. Tente novamente.');
     } finally {
       setLoading(false);
@@ -94,59 +101,61 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  inner: {
-    gap: 32,
-  },
-  brandBox: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: 2,
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Palette.textMuted,
-  },
-  form: {
-    gap: 14,
-  },
-  error: {
-    color: '#fca5a5',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    alignItems: 'center',
-  },
-  footerText: {
-    color: Palette.textMuted,
-    fontSize: 14,
-  },
-  forgotLink: {
-    color: Palette.highlight,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  footerLink: {
-    color: Palette.highlight,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+    content: {
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    inner: {
+      gap: 32,
+    },
+    brandBox: {
+      alignItems: 'center',
+      gap: 6,
+    },
+    logo: {
+      width: 120,
+      height: 120,
+      marginBottom: 8,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '900',
+      letterSpacing: 2,
+      color: P.text,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: P.textMuted,
+    },
+    form: {
+      gap: 14,
+    },
+    error: {
+      color: '#fca5a5',
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6,
+      alignItems: 'center',
+    },
+    footerText: {
+      color: P.textMuted,
+      fontSize: 14,
+    },
+    forgotLink: {
+      color: P.highlight,
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    footerLink: {
+      color: P.highlight,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+  });
+}

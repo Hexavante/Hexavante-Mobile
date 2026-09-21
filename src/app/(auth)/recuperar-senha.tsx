@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { requestPasswordReset, resetPassword } from '@/lib/api';
-import { Palette } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export default function RecuperarSenhaScreen() {
+  const P = usePalette();
+  const styles = makeStyles(P);
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState('');
@@ -179,60 +182,62 @@ export default function RecuperarSenhaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  inner: {
-    gap: 32,
-  },
-  brandBox: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: 1,
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Palette.textMuted,
-    textAlign: 'center',
-  },
-  form: {
-    gap: 14,
-  },
-  error: {
-    color: '#fca5a5',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  sent: {
-    color: Palette.emerald,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    alignItems: 'center',
-  },
-  footerText: {
-    color: Palette.textMuted,
-    fontSize: 14,
-  },
-  footerLink: {
-    color: Palette.highlight,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+    content: {
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    inner: {
+      gap: 32,
+    },
+    brandBox: {
+      alignItems: 'center',
+      gap: 6,
+    },
+    logo: {
+      width: 120,
+      height: 120,
+      marginBottom: 8,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '900',
+      letterSpacing: 1,
+      color: P.text,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: P.textMuted,
+      textAlign: 'center',
+    },
+    form: {
+      gap: 14,
+    },
+    error: {
+      color: '#fca5a5',
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    sent: {
+      color: P.emerald,
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6,
+      alignItems: 'center',
+    },
+    footerText: {
+      color: P.textMuted,
+      fontSize: 14,
+    },
+    footerLink: {
+      color: P.highlight,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+  });
+}

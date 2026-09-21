@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, Text, View, StyleSheet } from 'react-native';
 import { Medal, TrendingUp } from 'lucide-react-native';
 
@@ -10,15 +10,19 @@ import type { RankingEntry } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius } from '@/constants/theme';
-
-const MEDAL_COLORS: Record<number, string> = {
-  1: Palette.amber,
-  2: '#cbd5e1',
-  3: '#fb923c',
-};
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export default function RankingScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
+  const MEDAL_COLORS: Record<number, string> = {
+    1: P.amber,
+    2: '#cbd5e1',
+    3: '#fb923c',
+  };
   const token = useToken();
   const { user } = useAuth();
   const [entries, setEntries] = useState<RankingEntry[] | null>(null);
@@ -67,14 +71,11 @@ export default function RankingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 8 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
         }
         ListHeaderComponent={
           <>
-            <View style={styles.header}>
-              <Text style={styles.title}>Ranking</Text>
-              <Text style={styles.subtitle}>Os melhores da plataforma</Text>
-            </View>
+            <PageHeader title="Ranking" subtitle="Os melhores da plataforma" />
 
             {myRank?.rank != null ? (
               <View style={styles.meCard}>
@@ -117,33 +118,19 @@ export default function RankingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 14,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Palette.textMuted,
-    marginTop: 2,
-  },
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   meCard: {
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Palette.highlightBorder,
-    backgroundColor: Palette.highlightSoft,
+    borderColor: P.highlightBorder,
+    backgroundColor: P.highlightSoft,
     padding: 12,
   },
   meText: {
-    color: Palette.highlight,
+    color: P.highlight,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -153,13 +140,13 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Palette.border,
-    backgroundColor: Palette.card,
+    borderColor: P.border,
+    backgroundColor: P.card,
     padding: 10,
   },
   rowMe: {
-    borderColor: Palette.highlightBorder,
-    backgroundColor: Palette.highlightSoft,
+    borderColor: P.highlightBorder,
+    backgroundColor: P.highlightSoft,
   },
   posBox: {
     width: 34,
@@ -170,7 +157,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
   posText: {
-    color: Palette.textMuted,
+    color: P.textMuted,
     fontSize: 14,
     fontWeight: '800',
   },
@@ -189,20 +176,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   avatarText: {
-    color: Palette.textMuted,
+    color: P.textMuted,
     fontSize: 13,
     fontWeight: '700',
   },
   username: {
     flex: 1,
-    color: Palette.text,
+    color: P.text,
     fontSize: 14,
     fontWeight: '600',
   },
   xp: {
-    color: Palette.amber,
+    color: P.amber,
     fontSize: 13,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
-});
+  });
+}

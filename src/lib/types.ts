@@ -143,12 +143,20 @@ export type ShopItem = {
   expiresAt?: string | null;
 };
 
+export type CoinHistoryEntry = {
+  id: string;
+  amount: number;
+  description?: string | null;
+  createdAt?: string | null;
+};
+
 export type ShopState = {
   items: ShopItem[];
   inventory: InventoryEntry[];
   coins: number;
   premium: boolean;
   premiumExpiresAt: string | null;
+  coinHistory?: CoinHistoryEntry[];
 };
 
 export type InventoryEntry = {

@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, RefreshControl, Text, View, StyleSheet } from 'react-native';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { Ban, BarChart3, Coins, Crown, ShoppingCart, Sparkles } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { shopApi } from '@/lib/features';
-import type { ShopItem } from '@/lib/types';
+import { success } from '@/lib/haptics';
+import type { CoinHistoryEntry, ShopItem } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 const PREMIUM_BENEFITS = [
   { icon: Sparkles, label: 'Simulados exclusivos' },
@@ -26,15 +30,39 @@ function formatPremiumDate(value: string | null | undefined): string | null {
   return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function formatShortDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
 export default function LojaScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
   const [items, setItems] = useState<ShopItem[] | null>(null);
   const [coins, setCoins] = useState<number | null>(null);
   const [premium, setPremium] = useState(false);
   const [premiumExpiresAt, setPremiumExpiresAt] = useState<string | null>(null);
+  const [coinHistory, setCoinHistory] = useState<CoinHistoryEntry[] | null>(null);
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [trialLoading, setTrialLoading] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    };
+  }, []);
+
+  const triggerCelebrate = useCallback(() => {
+    setCelebrate(true);
+    if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    celebrateTimer.current = setTimeout(() => setCelebrate(false), 2500);
+  }, []);
 
   const load = useCallback(() => {
     if (!token) return;
@@ -46,6 +74,7 @@ export default function LojaScreen() {
         setCoins(state.coins);
         setPremium(state.premium ?? false);
         setPremiumExpiresAt(state.premiumExpiresAt ?? null);
+        setCoinHistory(state.coinHistory ?? null);
       })
       .catch(() => setError(true))
       .finally(() => setRefreshing(false));
@@ -65,6 +94,8 @@ export default function LojaScreen() {
           void shopApi(token)
             .purchase(item.id)
             .then(() => {
+              void success();
+              triggerCelebrate();
               Alert.alert('Sucesso', 'Item comprado!');
               load();
             })
@@ -80,6 +111,8 @@ export default function LojaScreen() {
     shopApi(token)
       .premiumTrial()
       .then(() => {
+        void success();
+        triggerCelebrate();
         Alert.alert('Sucesso', 'Trial Premium ativado por 30 dias!');
         load();
       })
@@ -105,6 +138,11 @@ export default function LojaScreen() {
 
   return (
     <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
+      {celebrate ? (
+        <View pointerEvents="none" style={styles.celebrateOverlay}>
+          <ConfettiCannon count={80} origin={{ x: 200, y: 0 }} fadeOut autoStart />
+        </View>
+      ) : null}
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -113,13 +151,13 @@ export default function LojaScreen() {
         columnWrapperStyle={styles.column}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 12 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
         }
         ListHeaderComponent={
           <>
             <Card style={styles.premiumCard}>
               <View style={styles.premiumChip}>
-                <Crown size={12} color={Palette.gold} />
+                <Crown size={12} color={P.gold} />
                 <Text style={styles.premiumChipText}>HEXAVANTE PREMIUM</Text>
               </View>
               <Text style={styles.premiumTitle}>
@@ -128,7 +166,7 @@ export default function LojaScreen() {
               <View style={styles.benefitsList}>
                 {PREMIUM_BENEFITS.map(({ icon: Icon, label }) => (
                   <View key={label} style={styles.benefitRow}>
-                    <Icon size={14} color={Palette.gold} />
+                    <Icon size={14} color={P.gold} />
                     <Text style={styles.benefitText}>{label}</Text>
                   </View>
                 ))}
@@ -149,7 +187,7 @@ export default function LojaScreen() {
             <View style={styles.header}>
               <Text style={styles.title}>Loja</Text>
               <View style={styles.coinsBadge}>
-                <Coins size={16} color={Palette.gold} />
+                <Coins size={16} color={P.gold} />
                 <Text style={styles.coinsText}>{coins}</Text>
               </View>
             </View>
@@ -158,10 +196,33 @@ export default function LojaScreen() {
         ListEmptyComponent={
           <EmptyState icon={ShoppingCart} title="Loja vazia" description="Novos itens chegarão em breve." />
         }
+        ListFooterComponent={
+          coinHistory && coinHistory.length > 0 ? (
+            <View style={styles.historySection}>
+              <Text style={styles.historyTitle}>Últimas movimentações</Text>
+              {coinHistory.slice(0, 5).map((entry) => {
+                const amount = entry.amount ?? 0;
+                const positive = amount >= 0;
+                const date = formatShortDate(entry.createdAt ?? null);
+                return (
+                  <View key={entry.id} style={styles.historyRow}>
+                    <Text style={[styles.historyAmount, positive ? styles.positive : styles.negative]}>
+                      {positive ? `+${amount}` : amount}
+                    </Text>
+                    <Text style={styles.historyDesc} numberOfLines={1}>
+                      {entry.description ?? 'Movimentação'}
+                    </Text>
+                    {date ? <Text style={styles.historyDate}>{date}</Text> : null}
+                  </View>
+                );
+              })}
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => (
           <Card style={styles.itemCard}>
             <View style={styles.itemIcon}>
-              <Coins size={22} color={Palette.highlight} />
+              <Coins size={22} color={P.highlight} />
             </View>
             <View style={styles.itemNameRow}>
               <Text style={styles.itemName} numberOfLines={1}>
@@ -169,7 +230,7 @@ export default function LojaScreen() {
               </Text>
               {item.isPremiumOnly ? (
                 <View style={styles.proChip}>
-                  <Crown size={10} color={Palette.gold} />
+                  <Crown size={10} color={P.gold} />
                   <Text style={styles.proChipText}>PRO</Text>
                 </View>
               ) : null}
@@ -185,7 +246,7 @@ export default function LojaScreen() {
               onPress={() => buy(item)}
               style={styles.buyBtn}
             >
-              <Coins size={14} color={Palette.gold} />
+              <Coins size={14} color={P.gold} />
             </Button>
           </Card>
         )}
@@ -194,7 +255,8 @@ export default function LojaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   premiumCard: {
     marginHorizontal: 16,
     marginBottom: 12,
@@ -215,7 +277,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   premiumChipText: {
-    color: Palette.gold,
+    color: P.gold,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
@@ -223,7 +285,7 @@ const styles = StyleSheet.create({
   premiumTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
   },
   benefitsList: {
     gap: 6,
@@ -235,12 +297,12 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 13,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   premiumExpiry: {
     fontSize: 12,
     fontWeight: '700',
-    color: Palette.gold,
+    color: P.gold,
   },
   trialBtn: {
     marginTop: Spacing.sm,
@@ -256,7 +318,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
   },
   coinsBadge: {
     flexDirection: 'row',
@@ -270,7 +332,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   coinsText: {
-    color: Palette.gold,
+    color: P.gold,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -287,9 +349,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
     borderWidth: 1,
-    borderColor: Palette.highlightBorder,
+    borderColor: P.highlightBorder,
     marginBottom: 4,
   },
   itemNameRow: {
@@ -301,7 +363,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
   },
   proChip: {
     flexDirection: 'row',
@@ -315,18 +377,68 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   proChipText: {
-    color: Palette.gold,
+    color: P.gold,
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   itemDesc: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
     lineHeight: 16,
     minHeight: 32,
   },
   buyBtn: {
     marginTop: 4,
   },
-});
+  historySection: {
+    marginTop: 4,
+    gap: 8,
+  },
+  historyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: P.text,
+    paddingHorizontal: 16,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: P.border,
+    backgroundColor: P.card,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  historyAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+    minWidth: 48,
+  },
+  positive: {
+    color: P.emerald,
+  },
+  negative: {
+    color: P.red,
+  },
+  historyDesc: {
+    flex: 1,
+    fontSize: 13,
+    color: P.textMuted,
+  },
+  historyDate: {
+    fontSize: 11,
+    color: P.textSubtle,
+  },
+  celebrateOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
+  },
+  });
+}

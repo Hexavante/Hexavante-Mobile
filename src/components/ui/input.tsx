@@ -7,7 +7,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Palette, Radius } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
 
 export type InputProps = TextInputProps & {
   label?: string;
@@ -19,26 +20,27 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   { label, error, containerStyle, style, ...props },
   ref,
 ) {
+  const P = usePalette();
   return (
     <>
       {label ? (
-        <Text style={{ marginBottom: 6, fontSize: 13, fontWeight: '600', color: Palette.textMuted }}>
+        <Text style={{ marginBottom: 6, fontSize: 13, fontWeight: '600', color: P.textMuted }}>
           {label}
         </Text>
       ) : null}
       <TextInput
         ref={ref}
-        placeholderTextColor={Palette.textSubtle}
+        placeholderTextColor={P.textSubtle}
         style={[
           {
             height: 46,
             borderRadius: Radius.md,
             borderWidth: 1,
-            borderColor: error ? Palette.red : Palette.border,
+            borderColor: error ? P.red : P.border,
             backgroundColor: 'rgba(255,255,255,0.04)',
             paddingHorizontal: 14,
             fontSize: 15,
-            color: Palette.text,
+            color: P.text,
           },
           style,
         ]}

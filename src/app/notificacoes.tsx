@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -27,7 +27,9 @@ import type { Notification } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 const TYPE_ICONS: Record<string, typeof Bell> = {
   system: Info,
@@ -57,6 +59,8 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NotificacoesScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
   const router = useRouter();
 
@@ -137,7 +141,7 @@ export default function NotificacoesScreen() {
     ({ item }: { item: Notification }) => {
       const isUnread = !item.readAt;
       const Icon = TYPE_ICONS[item.type] ?? Bell;
-      const iconColor = isUnread ? Palette.highlight : Palette.textMuted;
+      const iconColor = isUnread ? P.highlight : P.textMuted;
 
       return (
         <TouchableOpacity
@@ -161,7 +165,7 @@ export default function NotificacoesScreen() {
         </TouchableOpacity>
       );
     },
-    [handlePress],
+    [handlePress, P],
   );
 
   if (error) {
@@ -187,7 +191,7 @@ export default function NotificacoesScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 32, gap: Spacing.sm }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+            <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
           }
           ListHeaderComponent={
             <>
@@ -205,7 +209,7 @@ export default function NotificacoesScreen() {
                 </View>
                 {unreadCount > 0 && (
                   <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
-                    <CheckCheck size={16} color={Palette.highlight} />
+                    <CheckCheck size={16} color={P.highlight} />
                     <Text style={styles.markAllText}>Marcar tudo como lido</Text>
                   </TouchableOpacity>
                 )}
@@ -226,7 +230,8 @@ export default function NotificacoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
@@ -237,7 +242,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   backText: {
-    color: Palette.highlight,
+    color: P.highlight,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -249,10 +254,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
   },
   badge: {
-    backgroundColor: Palette.red,
+    backgroundColor: P.red,
     borderRadius: Radius.full,
     minWidth: 22,
     height: 22,
@@ -261,7 +266,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   badgeText: {
-    color: Palette.white,
+    color: P.white,
     fontSize: 12,
     fontWeight: '800',
   },
@@ -272,7 +277,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   markAllText: {
-    color: Palette.highlight,
+    color: P.highlight,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -286,13 +291,13 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Palette.border,
-    backgroundColor: Palette.card,
+    borderColor: P.border,
+    backgroundColor: P.card,
     padding: Spacing.md,
   },
   itemUnread: {
-    borderColor: Palette.highlightBorder,
-    backgroundColor: Palette.highlightSoft,
+    borderColor: P.highlightBorder,
+    backgroundColor: P.highlightSoft,
   },
   iconBox: {
     width: 36,
@@ -312,26 +317,27 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   itemTitleUnread: {
-    color: Palette.text,
+    color: P.text,
   },
   message: {
     fontSize: 13,
-    color: Palette.textMuted,
+    color: P.textMuted,
     lineHeight: 18,
   },
   time: {
     fontSize: 12,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
     marginTop: 2,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: Radius.full,
-    backgroundColor: Palette.highlight,
+    backgroundColor: P.highlight,
     marginTop: 6,
   },
-});
+  });
+}

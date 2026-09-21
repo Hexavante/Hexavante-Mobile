@@ -4,9 +4,12 @@ import { Text, View, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export function VerifyCodeForm() {
+  const P = usePalette();
+  const styles = makeStyles(P);
   const { pendingVerification, verifyCode, resendCode, cancelVerification } = useAuth();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -81,30 +84,32 @@ export function VerifyCodeForm() {
   );
 }
 
-const styles = StyleSheet.create({
-  form: {
-    gap: 14,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: Palette.text,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Palette.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  error: {
-    color: '#fca5a5',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  sent: {
-    color: Palette.emerald,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-});
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+    form: {
+      gap: 14,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '900',
+      color: P.text,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: 14,
+      color: P.textMuted,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    error: {
+      color: '#fca5a5',
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    sent: {
+      color: P.emerald,
+      fontSize: 13,
+      textAlign: 'center',
+    },
+  });
+}

@@ -1,7 +1,8 @@
 import { RefreshControl, ScrollView, StyleSheet, View, type ScrollViewProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Palette } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export type ScreenProps = Omit<ScrollViewProps, 'refreshControl'> & {
   children: React.ReactNode;
@@ -18,6 +19,8 @@ export function Screen({
   onRefresh,
   ...props
 }: ScreenProps) {
+  const P = usePalette();
+  const styles = makeStyles(P);
   if (!scrollable) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -37,8 +40,8 @@ export function Screen({
             <RefreshControl
               refreshing={!!refreshing}
               onRefresh={onRefresh}
-              tintColor={Palette.highlight}
-              colors={[Palette.highlight]}
+              tintColor={P.highlight}
+              colors={[P.highlight]}
             />
           ) : undefined
         }
@@ -50,17 +53,19 @@ export function Screen({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Palette.bg,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  noScroll: {
-    flex: 1,
-    padding: 0,
-  },
-});
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: P.bg,
+    },
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+    },
+    noScroll: {
+      flex: 1,
+      padding: 0,
+    },
+  });
+}

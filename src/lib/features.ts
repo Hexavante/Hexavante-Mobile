@@ -32,6 +32,8 @@ export function coursesApi(token: string) {
       api<{ isFavorite: boolean }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/favorite`, { method: 'POST', token }),
     completeLesson: (courseId: string, lessonId: string) =>
       api<{ success: boolean }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/complete`, { method: 'POST', token }),
+    saveNote: (courseId: string, lessonId: string, content: string) =>
+      api<{ success: boolean; note?: string | null }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/note`, { method: 'PUT', body: { content }, token }),
   };
 }
 

@@ -3,11 +3,14 @@ import { Image, KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'r
 import { Link } from 'expo-router';
 
 import { useAuth } from '@/lib/auth-context';
+import { errorFeedback } from '@/lib/haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { VerifyCodeForm } from '@/components/auth/verify-code';
-import { Palette, Radius } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 function toISODate(br: string): string | null {
   const m = br.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -21,6 +24,8 @@ function toISODate(br: string): string | null {
 }
 
 export default function RegisterScreen() {
+  const P = usePalette();
+  const styles = makeStyles(P);
   const { signUp, pendingVerification } = useAuth();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -33,19 +38,23 @@ export default function RegisterScreen() {
   const handleSubmit = async () => {
     if (!name.trim() || !username.trim() || !birthDate.trim() || !email || !password) {
       setError('Preencha todos os campos.');
+      void errorFeedback();
       return;
     }
     if (!/^[a-zA-Z0-9_]{3,30}$/.test(username.trim())) {
       setError('Usuário: 3 a 30 caracteres, só letras, números e _.');
+      void errorFeedback();
       return;
     }
     const iso = toISODate(birthDate);
     if (!iso) {
       setError('Data de nascimento inválida. Use DD/MM/AAAA.');
+      void errorFeedback();
       return;
     }
     if (password.length < 8) {
       setError('A senha precisa ter pelo menos 8 caracteres.');
+      void errorFeedback();
       return;
     }
     setLoading(true);
@@ -59,6 +68,7 @@ export default function RegisterScreen() {
         birthDate: iso,
       });
     } catch (e) {
+      void errorFeedback();
       setError(e instanceof Error ? e.message : 'Falha ao cadastrar. Tente novamente.');
     } finally {
       setLoading(false);
@@ -148,54 +158,56 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  inner: {
-    gap: 28,
-  },
-  brandBox: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: 1,
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Palette.textMuted,
-  },
-  form: {
-    gap: 14,
-  },
-  error: {
-    color: '#fca5a5',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    alignItems: 'center',
-  },
-  footerText: {
-    color: Palette.textMuted,
-    fontSize: 14,
-  },
-  footerLink: {
-    color: Palette.highlight,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+    content: {
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    inner: {
+      gap: 28,
+    },
+    brandBox: {
+      alignItems: 'center',
+      gap: 6,
+    },
+    logo: {
+      width: 100,
+      height: 100,
+      marginBottom: 8,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '900',
+      letterSpacing: 1,
+      color: P.text,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: P.textMuted,
+    },
+    form: {
+      gap: 14,
+    },
+    error: {
+      color: '#fca5a5',
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6,
+      alignItems: 'center',
+    },
+    footerText: {
+      color: P.textMuted,
+      fontSize: 14,
+    },
+    footerLink: {
+      color: P.highlight,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+  });
+}

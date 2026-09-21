@@ -8,6 +8,7 @@ import {
   Flame,
   LogOut,
   Medal,
+  MonitorPlay,
   Star,
   TrendingUp,
 } from 'lucide-react-native';
@@ -21,15 +22,23 @@ import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { XpBar } from '@/components/gamification/xp-bar';
-import { Palette, Radius, shadow } from '@/constants/theme';
+import { Radius, shadow } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
-const QUICK_LINKS = [
-  { label: 'Cursos', icon: BookOpen, href: '/cursos', color: Palette.sky },
-  { label: 'Simulados', icon: ClipboardList, href: '/simulados', color: Palette.violet },
-  { label: 'Ranking', icon: TrendingUp, href: '/ranking', color: Palette.amber },
-] as const;
+function makeQuickLinks(P: AppPalette) {
+  return [
+    { label: 'Cursos', icon: BookOpen, href: '/cursos', color: P.sky },
+    { label: 'Simulados', icon: ClipboardList, href: '/simulados', color: P.violet },
+    { label: 'Ranking', icon: TrendingUp, href: '/ranking', color: P.amber },
+    { label: 'Tutoriais', icon: MonitorPlay, href: '/tutoriais', color: P.emerald },
+  ] as const;
+}
 
 export default function DashboardScreen() {
+  const P = usePalette();
+  const styles = makeStyles(P);
+  const QUICK_LINKS = makeQuickLinks(P);
   const { user, signOut } = useAuth();
   const token = useToken();
   const router = useRouter();
@@ -56,7 +65,7 @@ export default function DashboardScreen() {
           style={({ pressed }) => [styles.logout, pressed && { opacity: 0.7 }]}
           accessibilityLabel="Sair da conta"
         >
-          <LogOut size={18} color={Palette.textMuted} />
+          <LogOut size={18} color={P.textMuted} />
         </Pressable>
       </View>
 
@@ -74,7 +83,7 @@ export default function DashboardScreen() {
       <Card style={styles.streakCard}>
         <View style={styles.streakRow}>
           <View style={styles.streakIcon}>
-            <Flame size={22} color={Palette.orange} />
+            <Flame size={22} color={P.orange} />
           </View>
           <Text style={styles.streakText}>
             {profile?.streakDays && profile.streakDays > 0
@@ -112,19 +121,19 @@ export default function DashboardScreen() {
           <Card style={styles.journeyCard}>
             <View style={styles.journeyGrid}>
               <View style={styles.journeyCol}>
-                <Star size={14} color={Palette.amber} />
+                <Star size={14} color={P.amber} />
                 <Text style={styles.journeyValue}>Nível {profile.level}</Text>
                 <Text style={styles.journeyLabel}>Nível atual</Text>
               </View>
               <View style={styles.journeyCol}>
-                <Medal size={14} color={Palette.violet} />
+                <Medal size={14} color={P.violet} />
                 <Text style={styles.journeyValue} numberOfLines={1}>
                   {profile.league}
                 </Text>
                 <Text style={styles.journeyLabel}>Liga</Text>
               </View>
               <View style={styles.journeyCol}>
-                <CalendarDays size={14} color={Palette.sky} />
+                <CalendarDays size={14} color={P.sky} />
                 <Text style={styles.journeyValue}>{profile.activeDays ?? 0}</Text>
                 <Text style={styles.journeyLabel}>Dias ativos</Text>
               </View>
@@ -136,118 +145,122 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  headerText: {
-    gap: 2,
-  },
-  greeting: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Palette.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Palette.textMuted,
-  },
-  logout: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Palette.border,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  hudCard: {
-    marginBottom: 24,
-    ...shadow,
-  },
-  streakCard: {
-    marginBottom: 24,
-  },
-  streakRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  streakIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    backgroundColor: `${Palette.orange}1f`,
-    borderColor: `${Palette.orange}40`,
-  },
-  streakText: {
-    flex: 1,
-    color: Palette.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Palette.text,
-    marginBottom: 12,
-  },
-  grid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  quickCard: {
-    flex: 1,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Palette.border,
-    backgroundColor: Palette.card,
-    padding: 14,
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  quickIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  quickLabel: {
-    color: Palette.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  journeyCard: {
-    marginBottom: 8,
-  },
-  journeyGrid: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  journeyCol: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  journeyValue: {
-    color: Palette.text,
-    fontSize: 14,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  journeyLabel: {
-    color: Palette.textSubtle,
-    fontSize: 11,
-    textAlign: 'center',
-  },
-});
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 20,
+    },
+    headerText: {
+      gap: 2,
+    },
+    greeting: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: P.text,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: P.textMuted,
+    },
+    logout: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: P.border,
+      backgroundColor: 'rgba(255,255,255,0.04)',
+    },
+    hudCard: {
+      marginBottom: 24,
+      ...shadow,
+    },
+    streakCard: {
+      marginBottom: 24,
+    },
+    streakRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    streakIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      backgroundColor: `${P.orange}1f`,
+      borderColor: `${P.orange}40`,
+    },
+    streakText: {
+      flex: 1,
+      color: P.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: P.text,
+      marginBottom: 12,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 24,
+    },
+    quickCard: {
+      flexBasis: '48%',
+      flexGrow: 1,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: P.border,
+      backgroundColor: P.card,
+      padding: 14,
+      gap: 10,
+      alignItems: 'flex-start',
+    },
+    quickIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+    },
+    quickLabel: {
+      color: P.text,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    journeyCard: {
+      marginBottom: 8,
+    },
+    journeyGrid: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    journeyCol: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 4,
+    },
+    journeyValue: {
+      color: P.text,
+      fontSize: 14,
+      fontWeight: '800',
+      textAlign: 'center',
+    },
+    journeyLabel: {
+      color: P.textSubtle,
+      fontSize: 11,
+      textAlign: 'center',
+    },
+  });
+}

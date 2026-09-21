@@ -1,13 +1,14 @@
 import { Stack } from 'expo-router';
 
-import { Palette } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
 
 export default function TutorialLayout() {
+  const P = usePalette();
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: Palette.bg },
+        contentStyle: { backgroundColor: P.bg },
       }}
     />
   );

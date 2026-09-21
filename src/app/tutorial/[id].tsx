@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Text, View, Image, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -11,9 +11,14 @@ import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing, shadow } from '@/constants/theme';
+import { PageHeader } from '@/components/ui/page-header';
+import { Radius, Spacing, shadow } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export default function TutorialDetailScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const token = useToken();
   const [tutorial, setTutorial] = useState<Tutorial | null>(null);
@@ -59,6 +64,7 @@ export default function TutorialDetailScreen() {
   return (
     <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        <PageHeader title="Tutorial" subtitle={tutorial.categoryName ?? undefined} />
         <View style={styles.videoContainer}>
           {tutorial.videoUrl && playing ? (
             <TutorialVideo
@@ -71,12 +77,12 @@ export default function TutorialDetailScreen() {
                 <Image source={{ uri: tutorial.thumbnailUrl }} style={styles.thumbnail} />
               ) : (
                 <View style={styles.thumbnailPlaceholder}>
-                  <Play size={40} color={Palette.highlight} />
+                  <Play size={40} color={P.highlight} />
                 </View>
               )}
               <View style={styles.playOverlay}>
                 <View style={styles.playButton}>
-                  <Play size={28} color={Palette.white} fill={Palette.white} />
+                  <Play size={28} color={P.white} fill={P.white} />
                 </View>
               </View>
             </Pressable>
@@ -91,7 +97,7 @@ export default function TutorialDetailScreen() {
               <Image source={{ uri: tutorial.authorAvatarUrl }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <User size={14} color={Palette.textMuted} />
+                <User size={14} color={P.textMuted} />
               </View>
             )}
             <Text style={styles.authorName}>{tutorial.authorName}</Text>
@@ -100,12 +106,12 @@ export default function TutorialDetailScreen() {
 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
-              <Eye size={14} color={Palette.textMuted} />
+              <Eye size={14} color={P.textMuted} />
               <Text style={styles.metaText}>{tutorial.viewCount} visualizações</Text>
             </View>
             {tutorial.duration ? (
               <View style={styles.metaItem}>
-                <Clock size={14} color={Palette.textMuted} />
+                <Clock size={14} color={P.textMuted} />
                 <Text style={styles.metaText}>{formatDuration(tutorial.duration)}</Text>
               </View>
             ) : null}
@@ -123,7 +129,7 @@ export default function TutorialDetailScreen() {
           {tutorial.tags.length > 0 ? (
             <View style={styles.tagsSection}>
               <View style={styles.tagsHeader}>
-                <Tag size={14} color={Palette.textMuted} />
+                <Tag size={14} color={P.textMuted} />
                 <Text style={styles.tagsTitle}>Tags</Text>
               </View>
               <View style={styles.tagsList}>
@@ -153,6 +159,8 @@ export default function TutorialDetailScreen() {
 }
 
 function TutorialVideo({ videoUrl, onFinish }: { videoUrl: string; onFinish: () => void }) {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const player = useVideoPlayer(videoUrl, (p) => {
     p.play();
   });
@@ -173,7 +181,8 @@ function TutorialVideo({ videoUrl, onFinish }: { videoUrl: string; onFinish: () 
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   videoContainer: {
     width: '100%',
     aspectRatio: 16 / 9,
@@ -198,7 +207,7 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.surface,
+    backgroundColor: P.surface,
   },
   playOverlay: {
     ...StyleSheet.absoluteFill,
@@ -212,7 +221,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.highlight,
+    backgroundColor: P.highlight,
   },
   info: {
     padding: Spacing.lg,
@@ -221,7 +230,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
     lineHeight: 28,
   },
   authorRow: {
@@ -240,18 +249,18 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.surface,
+    backgroundColor: P.surface,
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: P.border,
   },
   authorName: {
     fontSize: 13,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
   },
   authorUsername: {
     fontSize: 12,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
   metaRow: {
     flexDirection: 'row',
@@ -266,24 +275,24 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   categoryChip: {
     borderRadius: Radius.full,
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
     borderWidth: 1,
-    borderColor: Palette.highlightBorder,
+    borderColor: P.highlightBorder,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
   categoryText: {
-    color: Palette.highlight,
+    color: P.highlight,
     fontSize: 11,
     fontWeight: '700',
   },
   description: {
     fontSize: 14,
-    color: Palette.textMuted,
+    color: P.textMuted,
     lineHeight: 21,
   },
   tagsSection: {
@@ -297,7 +306,7 @@ const styles = StyleSheet.create({
   tagsTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   tagsList: {
     flexDirection: 'row',
@@ -306,15 +315,15 @@ const styles = StyleSheet.create({
   },
   tagChip: {
     borderRadius: Radius.sm,
-    backgroundColor: Palette.surface,
+    backgroundColor: P.surface,
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: P.border,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   tagText: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   dateCard: {
     marginTop: Spacing.sm,
@@ -323,6 +332,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
-});
+  });
+}

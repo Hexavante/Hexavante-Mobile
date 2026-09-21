@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, Text, View, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BookOpen, CheckCircle2, Layers, Play } from 'lucide-react-native';
@@ -11,9 +11,13 @@ import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { Palette, Radius, shadow } from '@/constants/theme';
+import { Radius, shadow } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 export default function CursoDetailScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const token = useToken();
@@ -85,11 +89,11 @@ export default function CursoDetailScreen() {
           ) : null}
           <View style={styles.heroMeta}>
             <View style={styles.heroMetaItem}>
-              <Layers size={13} color={Palette.textMuted} />
+              <Layers size={13} color={P.textMuted} />
               <Text style={styles.heroMetaText}>{course.totalModules} módulos</Text>
             </View>
             <View style={styles.heroMetaItem}>
-              <BookOpen size={13} color={Palette.textMuted} />
+              <BookOpen size={13} color={P.textMuted} />
               <Text style={styles.heroMetaText}>{course.totalLessons} aulas</Text>
             </View>
             {course.level ? (
@@ -130,10 +134,10 @@ export default function CursoDetailScreen() {
                   >
                     <View style={styles.lessonRow}>
                       {lesson.isCompleted ? (
-                        <CheckCircle2 size={16} color={Palette.emerald} />
+                        <CheckCircle2 size={16} color={P.emerald} />
                       ) : (
                         <View style={styles.playIcon}>
-                          <Play size={12} color={Palette.highlight} />
+                          <Play size={12} color={P.highlight} />
                         </View>
                       )}
                       <Text style={styles.lessonTitle} numberOfLines={1}>
@@ -154,23 +158,24 @@ export default function CursoDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   hero: {
     padding: 20,
     gap: 10,
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
     borderBottomWidth: 1,
-    borderBottomColor: Palette.highlightBorder,
+    borderBottomColor: P.highlightBorder,
   },
   heroTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
     lineHeight: 30,
   },
   instructor: {
     fontSize: 13,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   heroMeta: {
     flexDirection: 'row',
@@ -185,24 +190,24 @@ const styles = StyleSheet.create({
   },
   heroMetaText: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   levelChip: {
     borderRadius: Radius.full,
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
     borderWidth: 1,
-    borderColor: Palette.highlightBorder,
+    borderColor: P.highlightBorder,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
   levelText: {
-    color: Palette.highlight,
+    color: P.highlight,
     fontSize: 11,
     fontWeight: '700',
   },
   description: {
     fontSize: 14,
-    color: Palette.textMuted,
+    color: P.textMuted,
     lineHeight: 20,
   },
   enrollBtn: {
@@ -215,7 +220,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: Palette.text,
+    color: P.text,
   },
   moduleCard: {
     gap: 10,
@@ -224,7 +229,7 @@ const styles = StyleSheet.create({
   moduleTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
   },
   lessonList: {
     gap: 8,
@@ -240,15 +245,16 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
   },
   lessonTitle: {
     flex: 1,
     fontSize: 13,
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   lessonDuration: {
     fontSize: 11,
-    color: Palette.textSubtle,
+    color: P.textSubtle,
   },
-});
+  });
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -19,7 +19,9 @@ import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { usePalette } from '@/lib/theme-context';
+import type { AppPalette } from '@/constants/palettes';
 
 const CATEGORY_ICONS: Record<string, typeof Shield> = {
   title: Shield,
@@ -29,6 +31,8 @@ const CATEGORY_ICONS: Record<string, typeof Shield> = {
 };
 
 export default function InventarioScreen() {
+  const P = usePalette();
+  const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
   const router = useRouter();
   const [items, setItems] = useState<InventoryEntry[] | null>(null);
@@ -88,13 +92,13 @@ export default function InventarioScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 10 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={P.highlight} />
         }
         ListHeaderComponent={
           <>
             <View style={styles.header}>
               <Pressable onPress={() => router.back()} style={styles.backBtn}>
-                <ArrowLeft size={20} color={Palette.text} />
+                <ArrowLeft size={20} color={P.text} />
               </Pressable>
               <Text style={styles.title}>Inventário</Text>
               <View style={styles.backBtn} />
@@ -120,7 +124,7 @@ export default function InventarioScreen() {
                   <Image source={{ uri: entry.item.imageUrl }} style={styles.thumb} />
                 ) : (
                   <View style={styles.thumbPlaceholder}>
-                    <CatIcon size={20} color={Palette.highlight} />
+                    <CatIcon size={20} color={P.highlight} />
                   </View>
                 )}
 
@@ -158,7 +162,8 @@ export default function InventarioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(P: AppPalette) {
+  return StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '900',
-    color: Palette.text,
+    color: P.text,
   },
   card: {
     padding: Spacing.md,
@@ -191,7 +196,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: Radius.md,
-    backgroundColor: Palette.skeleton,
+    backgroundColor: P.skeleton,
   },
   thumbPlaceholder: {
     width: 48,
@@ -199,9 +204,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.highlightSoft,
+    backgroundColor: P.highlightSoft,
     borderWidth: 1,
-    borderColor: Palette.highlightBorder,
+    borderColor: P.highlightBorder,
   },
   info: {
     flex: 1,
@@ -210,11 +215,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: '700',
-    color: Palette.text,
+    color: P.text,
   },
   category: {
     fontSize: 12,
-    color: Palette.textMuted,
+    color: P.textMuted,
     textTransform: 'capitalize',
   },
   equipBtn: {
@@ -222,19 +227,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: P.border,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   equipBtnActive: {
-    borderColor: Palette.highlightBorder,
-    backgroundColor: Palette.highlightSoft,
+    borderColor: P.highlightBorder,
+    backgroundColor: P.highlightSoft,
   },
   equipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Palette.textMuted,
+    color: P.textMuted,
   },
   equipTextActive: {
-    color: Palette.highlight,
+    color: P.highlight,
   },
-});
+  });
+}
