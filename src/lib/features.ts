@@ -39,7 +39,11 @@ export function coursesApi(token: string) {
 
 export function examsApi(token: string) {
   return {
-    list: () => api<{ data: Exam[] }>('/api/v1/exams', { token }),
+    // GET /exams retorna array puro (sem envelope) — normaliza para {data}
+    list: async () => {
+      const res = await api<Exam[] | { data: Exam[] }>('/api/v1/exams', { token });
+      return { data: Array.isArray(res) ? res : (res.data ?? []) };
+    },
     detail: (id: string) => api<{ exam: Exam }>(`/api/v1/exams/${id}`, { token }),
     history: (page?: number) => api<{ attempts: ExamHistoryEntry[]; page: number; totalPages: number; total: number }>(`/api/v1/exams/history?page=${page ?? 1}`, { token }),
     stats: () => api<ExamStats>('/api/v1/exams/stats', { token }),
