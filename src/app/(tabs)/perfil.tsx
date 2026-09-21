@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Award, Backpack, BarChart3, Bell, ChevronRight, History, LogOut, Medal, Settings, ShieldCheck, Trophy } from 'lucide-react-native';
+import { Award, Backpack, BarChart3, Bell, ChevronRight, Flame, History, LogOut, Medal, Settings, ShieldCheck, Star, Trophy, Zap } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
-import { gamificationApi } from '@/lib/features';
+import { gamificationApi, shopApi } from '@/lib/features';
 import type { XpProfile } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
@@ -15,6 +15,13 @@ import { Radius, shadow } from '@/constants/theme';
 import { usePalette } from '@/lib/theme-context';
 import type { AppPalette } from '@/constants/palettes';
 
+const BORDER_COLORS: Record<string, string> = {
+  'border-cyan': '#22d3ee',
+  'border-aurora': '#a78bfa',
+  'border-gold': '#fcd34d',
+  'border-crystal': '#bae6fd',
+};
+
 export default function PerfilScreen() {
   const P = usePalette();
   const styles = makeStyles(P);
@@ -22,6 +29,8 @@ export default function PerfilScreen() {
   const token = useToken();
   const router = useRouter();
   const [profile, setProfile] = useState<XpProfile | null>(null);
+  const [equippedTitle, setEquippedTitle] = useState<string | null>(null);
+  const [avatarBorderColor, setAvatarBorderColor] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -29,25 +38,75 @@ export default function PerfilScreen() {
       .xpProfile()
       .then(setProfile)
       .catch(() => undefined);
-  }, [token]);
+    shopApi(token)
+      .inventory()
+      .then(({ items }) => {
+        const titleEntry = items.find(
+          (e) => e.isEquipped && e.item.category === 'TITLE' && e.item.metadata?.titleText,
+        );
+        if (titleEntry?.item.metadata?.titleText) setEquippedTitle(titleEntry.item.metadata.titleText);
+        const borderEntry = items.find(
+          (e) => e.isEquipped && e.item.category === 'AVATAR_BORDER' && e.item.metadata?.borderId,
+        );
+        const borderId = borderEntry?.item.metadata?.borderId;
+        if (borderId) setAvatarBorderColor(BORDER_COLORS[borderId] ?? P.highlightBorder);
+      })
+      .catch(() => undefined);
+  }, [token, P.highlightBorder]);
 
   return (
     <Screen>
       <Card style={styles.profileCard}>
-        <View style={styles.avatar}>
+        <View style={[styles.avatar, avatarBorderColor ? { borderColor: avatarBorderColor, borderWidth: 3 } : null]}>
           <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() ?? 'H'}</Text>
         </View>
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         {user?.username ? <Text style={styles.username}>@{user.username}</Text> : null}
+        {equippedTitle ? (
+          <View style={styles.titleChip}>
+            <Award size={12} color={P.gold} />
+            <Text style={styles.titleChipText}>{equippedTitle}</Text>
+          </View>
+        ) : null}
       </Card>
 
       {!profile ? (
         <Loading label="Carregando progresso..." />
       ) : (
-        <Card style={styles.xpCard}>
-          <XpBar profile={profile} />
-        </Card>
+        <>
+          <Card style={styles.xpCard}>
+            <XpBar profile={profile} />
+          </Card>
+          <Card style={styles.statsCard}>
+            <View style={styles.statsRow}>
+              <View style={styles.statCol}>
+                <Star size={14} color={P.amber} />
+                <Text style={styles.statValue}>{profile.level}</Text>
+                <Text style={styles.statLabel}>Nível</Text>
+              </View>
+              <View style={styles.statCol}>
+                <Medal size={14} color={P.violet} />
+                <Text style={styles.statValue} numberOfLines={1}>
+                  {profile.league}
+                </Text>
+                <Text style={styles.statLabel}>Liga</Text>
+              </View>
+              <View style={styles.statCol}>
+                <Flame size={14} color={P.orange} />
+                <Text style={styles.statValue}>{profile.streakDays ?? 0} dias</Text>
+                <Text style={styles.statLabel}>Streak</Text>
+              </View>
+              <View style={styles.statCol}>
+                <Zap size={14} color={P.sky} />
+                <Text style={styles.statValue} numberOfLines={1}>
+                  {profile.totalXp.toLocaleString('pt-BR')}
+                </Text>
+                <Text style={styles.statLabel}>XP total</Text>
+              </View>
+            </View>
+          </Card>
+        </>
       )}
 
       <View style={styles.menu}>
@@ -195,8 +254,48 @@ function makeStyles(P: AppPalette) {
       color: P.highlight,
       fontWeight: '600',
     },
+    titleChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: Radius.full,
+      borderWidth: 1,
+      borderColor: P.gold,
+      backgroundColor: 'rgba(252,211,77,0.1)',
+    },
+    titleChipText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: P.gold,
+    },
     xpCard: {
       marginBottom: 16,
+    },
+    statsCard: {
+      marginBottom: 16,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    statCol: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 4,
+    },
+    statValue: {
+      color: P.text,
+      fontSize: 14,
+      fontWeight: '800',
+      textAlign: 'center',
+    },
+    statLabel: {
+      color: P.textSubtle,
+      fontSize: 11,
+      textAlign: 'center',
     },
     menu: {
       gap: 8,

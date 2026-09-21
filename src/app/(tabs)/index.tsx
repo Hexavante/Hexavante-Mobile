@@ -9,12 +9,15 @@ import {
   LogOut,
   Medal,
   MonitorPlay,
+  PartyPopper,
   Star,
+  Target,
   TrendingUp,
 } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
+import { api } from '@/lib/api';
 import { gamificationApi } from '@/lib/features';
 import type { XpProfile } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
@@ -25,6 +28,13 @@ import { XpBar } from '@/components/gamification/xp-bar';
 import { Radius, shadow } from '@/constants/theme';
 import { usePalette } from '@/lib/theme-context';
 import type { AppPalette } from '@/constants/palettes';
+
+const DAILY_GOAL = 50;
+
+type XpEntry = {
+  amount: number;
+  createdAt: string;
+};
 
 function makeQuickLinks(P: AppPalette) {
   return [
@@ -44,6 +54,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<XpProfile | null>(null);
   const [error, setError] = useState(false);
+  const [todayXp, setTodayXp] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -52,6 +63,24 @@ export default function DashboardScreen() {
       .then(setProfile)
       .catch(() => setError(true));
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !user?.id) return;
+    api<{ data: XpEntry[] }>(`/api/v1/users/${user.id}/xp`, { token })
+      .then((res) => {
+        const entries = res.data ?? [];
+        const today = new Date().toISOString().slice(0, 10);
+        const total = entries.reduce(
+          (sum, e) => sum + (e.createdAt?.slice(0, 10) === today ? (e.amount ?? 0) : 0),
+          0,
+        );
+        setTodayXp(total);
+      })
+      .catch(() => undefined);
+  }, [token, user?.id]);
+
+  const goalDone = (todayXp ?? 0) >= DAILY_GOAL;
+  const goalProgress = `${Math.min(100, Math.max(0, ((todayXp ?? 0) / DAILY_GOAL) * 100))}%` as `${number}%`;
 
   return (
     <Screen>
@@ -92,6 +121,30 @@ export default function DashboardScreen() {
           </Text>
         </View>
       </Card>
+
+      {user?.id && todayXp !== null ? (
+        <Card style={styles.goalCard}>
+          <View style={styles.goalRow}>
+            <View style={styles.goalIcon}>
+              <Target size={18} color={P.emerald} />
+            </View>
+            <Text style={styles.goalTitle}>Meta diária</Text>
+          </View>
+          <View style={styles.goalTrack}>
+            <View style={[styles.goalFill, { width: goalProgress }]} />
+          </View>
+          {goalDone ? (
+            <View style={styles.goalDoneRow}>
+              <PartyPopper size={14} color={P.gold} />
+              <Text style={styles.goalDoneText}>Meta cumprida!</Text>
+            </View>
+          ) : (
+            <Text style={styles.goalText}>
+              {todayXp}/{DAILY_GOAL} XP hoje
+            </Text>
+          )}
+        </Card>
+      ) : null}
 
       <Text style={styles.sectionTitle}>Continue estudando</Text>
       <View style={styles.grid}>
@@ -202,6 +255,57 @@ function makeStyles(P: AppPalette) {
       color: P.text,
       fontSize: 14,
       fontWeight: '700',
+    },
+    goalCard: {
+      marginBottom: 24,
+      gap: 10,
+    },
+    goalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    goalIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      backgroundColor: `${P.emerald}1f`,
+      borderColor: `${P.emerald}40`,
+    },
+    goalTitle: {
+      color: P.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    goalTrack: {
+      height: 8,
+      borderRadius: Radius.full,
+      backgroundColor: P.skeleton,
+      overflow: 'hidden',
+    },
+    goalFill: {
+      height: '100%',
+      borderRadius: Radius.full,
+      backgroundColor: P.emerald,
+    },
+    goalText: {
+      color: P.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+      fontVariant: ['tabular-nums'],
+    },
+    goalDoneRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    goalDoneText: {
+      color: P.gold,
+      fontSize: 13,
+      fontWeight: '800',
     },
     sectionTitle: {
       fontSize: 16,

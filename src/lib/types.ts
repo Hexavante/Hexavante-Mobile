@@ -141,6 +141,12 @@ export type ShopItem = {
   inventoryId?: string | null;
   isEquipped?: boolean;
   expiresAt?: string | null;
+  metadata?: {
+    themeId?: string;
+    titleText?: string;
+    borderId?: string;
+    rarity?: string;
+  } | null;
 };
 
 export type CoinHistoryEntry = {

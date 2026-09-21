@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, RefreshControl, Text, View, StyleSheet } from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Text, View, StyleSheet } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { Ban, BarChart3, Coins, Crown, ShoppingCart, Sparkles } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { shopApi } from '@/lib/features';
 import { success } from '@/lib/haptics';
+import { getThemeIdOf, isThemeUsable } from '@/lib/theme-shop';
 import type { CoinHistoryEntry, ShopItem } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
@@ -13,7 +14,8 @@ import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Radius, Spacing } from '@/constants/theme';
-import { usePalette } from '@/lib/theme-context';
+import { usePalette, useThemeChoice } from '@/lib/theme-context';
+import { PALETTES, THEME_META } from '@/constants/palettes';
 import type { AppPalette } from '@/constants/palettes';
 
 const PREMIUM_BENEFITS = [
@@ -22,6 +24,29 @@ const PREMIUM_BENEFITS = [
   { icon: Coins, label: 'x2 moedas' },
   { icon: BarChart3, label: 'Estatísticas avançadas' },
 ] as const;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  TITLE: 'Títulos',
+  AVATAR_BORDER: 'Bordas',
+  THEME: 'Temas',
+  COSMETIC: 'Cosméticos',
+  BOOSTER: 'Boosters',
+  PASS: 'Passes',
+  REVIEW_PACK: 'Revisão',
+  PET: 'Pets',
+  BADGE: 'Emblemas',
+  FRAME: 'Molduras',
+  EMOJI_PACK: 'Emojis',
+  PROFILE_BACKGROUND: 'Fundos',
+};
+
+function categoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] ?? category;
+}
+
+function isOwned(item: ShopItem): boolean {
+  return item.ownershipStatus === 'owned_permanent' || item.ownershipStatus === 'active_temporary';
+}
 
 function formatPremiumDate(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -40,6 +65,7 @@ function formatShortDate(value: string | null | undefined): string | null {
 export default function LojaScreen() {
   const P = usePalette();
   const styles = useMemo(() => makeStyles(P), [P]);
+  const { themeId: currentThemeId, setThemeId } = useThemeChoice();
   const token = useToken();
   const [items, setItems] = useState<ShopItem[] | null>(null);
   const [coins, setCoins] = useState<number | null>(null);
@@ -50,6 +76,7 @@ export default function LojaScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [trialLoading, setTrialLoading] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -105,6 +132,19 @@ export default function LojaScreen() {
     ]);
   };
 
+  const applyTheme = useCallback(
+    async (themeId: string) => {
+      try {
+        await setThemeId(themeId);
+        await success();
+      } catch {
+        // haptics/storage indisponível — segue com o feedback visual
+      }
+      Alert.alert('Tema aplicado!', 'Seu novo visual já está ativo.');
+    },
+    [setThemeId],
+  );
+
   const activateTrial = () => {
     if (!token || trialLoading) return;
     setTrialLoading(true);
@@ -120,6 +160,21 @@ export default function LojaScreen() {
       .finally(() => setTrialLoading(false));
   };
 
+  const availableCategories = useMemo(() => {
+    if (!items) return [];
+    const seen = new Set<string>();
+    for (const item of items) {
+      if (item.category) seen.add(item.category);
+    }
+    return Array.from(seen);
+  }, [items]);
+
+  const filteredItems = useMemo(() => {
+    if (!items) return null;
+    if (selectedCategory === 'ALL') return items;
+    return items.filter((item) => item.category === selectedCategory);
+  }, [items, selectedCategory]);
+
   if (error) {
     return (
       <Screen>
@@ -132,7 +187,7 @@ export default function LojaScreen() {
     );
   }
 
-  if (!items || coins === null) return <Loading label="Carregando loja..." />;
+  if (!items || coins === null || !filteredItems) return <Loading label="Carregando loja..." />;
 
   const premiumDateLabel = formatPremiumDate(premiumExpiresAt);
 
@@ -144,7 +199,7 @@ export default function LojaScreen() {
         </View>
       ) : null}
       <FlatList
-        data={items}
+        data={filteredItems}
         keyExtractor={(item) => item.id}
         numColumns={2}
         showsVerticalScrollIndicator={false}
@@ -191,10 +246,62 @@ export default function LojaScreen() {
                 <Text style={styles.coinsText}>{coins}</Text>
               </View>
             </View>
+            {availableCategories.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsContent}
+                style={styles.chipsScroll}
+              >
+                <Pressable
+                  onPress={() => setSelectedCategory('ALL')}
+                  style={[
+                    styles.chip,
+                    selectedCategory === 'ALL' ? styles.chipActive : styles.chipInactive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      selectedCategory === 'ALL' ? styles.chipTextActive : styles.chipTextInactive,
+                    ]}
+                  >
+                    Todos
+                  </Text>
+                </Pressable>
+                {availableCategories.map((category) => {
+                  const active = selectedCategory === category;
+                  return (
+                    <Pressable
+                      key={category}
+                      onPress={() => setSelectedCategory(category)}
+                      style={[styles.chip, active ? styles.chipActive : styles.chipInactive]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          active ? styles.chipTextActive : styles.chipTextInactive,
+                        ]}
+                      >
+                        {categoryLabel(category)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            ) : null}
           </>
         }
         ListEmptyComponent={
-          <EmptyState icon={ShoppingCart} title="Loja vazia" description="Novos itens chegarão em breve." />
+          selectedCategory === 'ALL' ? (
+            <EmptyState icon={ShoppingCart} title="Loja vazia" description="Novos itens chegarão em breve." />
+          ) : (
+            <EmptyState
+              icon={ShoppingCart}
+              title="Nada nesta categoria"
+              description="Tente outra categoria."
+            />
+          )
         }
         ListFooterComponent={
           coinHistory && coinHistory.length > 0 ? (
@@ -219,37 +326,86 @@ export default function LojaScreen() {
             </View>
           ) : null
         }
-        renderItem={({ item }) => (
-          <Card style={styles.itemCard}>
-            <View style={styles.itemIcon}>
-              <Coins size={22} color={P.highlight} />
-            </View>
-            <View style={styles.itemNameRow}>
-              <Text style={styles.itemName} numberOfLines={1}>
-                {item.name}
-              </Text>
-              {item.isPremiumOnly ? (
-                <View style={styles.proChip}>
-                  <Crown size={10} color={P.gold} />
-                  <Text style={styles.proChipText}>PRO</Text>
+        renderItem={({ item }) => {
+          const owned = isOwned(item);
+          const equipped = item.isEquipped === true;
+          const themeIdOf = getThemeIdOf(item);
+          const themeUsable = isThemeUsable(item);
+          const isThemeCard = item.category === 'THEME' && themeIdOf;
+          const themeHighlight = themeIdOf ? (PALETTES[themeIdOf]?.highlight ?? P.highlight) : null;
+          const themeLabel = themeIdOf ? (THEME_META[themeIdOf]?.label ?? item.name) : null;
+          const isCurrentTheme = !!themeIdOf && currentThemeId === themeIdOf;
+
+          return (
+            <Card style={styles.itemCard}>
+              <View style={styles.itemIcon}>
+                <Coins size={22} color={P.highlight} />
+              </View>
+              <View style={styles.itemNameRow}>
+                <Text style={styles.itemName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                {item.isPremiumOnly ? (
+                  <View style={styles.proChip}>
+                    <Crown size={10} color={P.gold} />
+                    <Text style={styles.proChipText}>PRO</Text>
+                  </View>
+                ) : null}
+              </View>
+              {owned || equipped ? (
+                <View style={styles.ownershipRow}>
+                  {owned ? (
+                    <View style={styles.ownedChip}>
+                      <Text style={styles.ownedChipText}>SEU</Text>
+                    </View>
+                  ) : null}
+                  {equipped ? (
+                    <View style={styles.inUseChip}>
+                      <Text style={styles.inUseChipText}>EM USO</Text>
+                    </View>
+                  ) : null}
                 </View>
               ) : null}
-            </View>
-            <Text style={styles.itemDesc} numberOfLines={2}>
-              {item.description ?? item.category}
-            </Text>
-            <Button
-              size="sm"
-              variant="secondary"
-              label={String(item.cost)}
-              disabled={coins < item.cost}
-              onPress={() => buy(item)}
-              style={styles.buyBtn}
-            >
-              <Coins size={14} color={P.gold} />
-            </Button>
-          </Card>
-        )}
+              <Text style={styles.itemDesc} numberOfLines={2}>
+                {item.description ?? item.category}
+              </Text>
+              {isThemeCard && themeHighlight && themeLabel ? (
+                <View style={styles.themePreviewRow}>
+                  <View style={[styles.themeDot, { backgroundColor: themeHighlight }]} />
+                  <Text style={styles.themePreviewLabel} numberOfLines={1}>
+                    {themeLabel}
+                  </Text>
+                </View>
+              ) : null}
+              {themeUsable && themeIdOf ? (
+                isCurrentTheme ? (
+                  <Text style={styles.inUseText}>Em uso</Text>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    label="Usar tema"
+                    onPress={() => void applyTheme(themeIdOf)}
+                    style={styles.buyBtn}
+                  />
+                )
+              ) : owned ? (
+                <Text style={styles.ownedText}>Adquirido</Text>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  label={String(item.cost)}
+                  disabled={coins < item.cost}
+                  onPress={() => buy(item)}
+                  style={styles.buyBtn}
+                >
+                  <Coins size={14} color={P.gold} />
+                </Button>
+              )}
+            </Card>
+          );
+        }}
       />
     </Screen>
   );
@@ -336,6 +492,38 @@ function makeStyles(P: AppPalette) {
     fontSize: 14,
     fontWeight: '700',
   },
+  chipsScroll: {
+    marginBottom: 12,
+  },
+  chipsContent: {
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+  chip: {
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  chipActive: {
+    borderColor: P.highlight,
+    backgroundColor: P.highlightSoft,
+  },
+  chipInactive: {
+    borderColor: P.border,
+    backgroundColor: 'transparent',
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  chipTextActive: {
+    color: P.highlight,
+  },
+  chipTextInactive: {
+    color: P.textMuted,
+  },
   column: {
     gap: 12,
   },
@@ -382,11 +570,78 @@ function makeStyles(P: AppPalette) {
     fontWeight: '800',
     letterSpacing: 0.5,
   },
+  ownershipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ownedChip: {
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: P.emerald,
+    backgroundColor: 'rgba(52,211,153,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  ownedChipText: {
+    color: P.emerald,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  inUseChip: {
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: P.highlight,
+    backgroundColor: P.highlightSoft,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  inUseChipText: {
+    color: P.highlight,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
   itemDesc: {
     fontSize: 12,
     color: P.textMuted,
     lineHeight: 16,
     minHeight: 32,
+  },
+  themePreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  themeDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: P.border,
+  },
+  themePreviewLabel: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: P.textMuted,
+  },
+  ownedText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: P.textMuted,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingVertical: 8,
+  },
+  inUseText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: P.highlight,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingVertical: 8,
   },
   buyBtn: {
     marginTop: 4,
