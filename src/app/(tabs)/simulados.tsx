@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, Text, TextInput, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Clock, FileCheck, Layers, Search } from 'lucide-react-native';
 
@@ -18,14 +18,21 @@ export default function SimuladosScreen() {
   const [exams, setExams] = useState<Exam[] | null>(null);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!token) return;
+    setRefreshing(true);
     examsApi(token)
       .list()
       .then((res) => setExams(res.data))
-      .catch(() => setError(true));
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
   }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = useMemo(() => {
     if (!exams) return null;
@@ -49,29 +56,36 @@ export default function SimuladosScreen() {
   if (!exams) return <Loading label="Carregando simulados..." />;
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Simulados</Text>
-        <Text style={styles.subtitle}>Teste seus conhecimentos</Text>
-      </View>
-      <View style={styles.searchContainer}>
-        <Search size={18} color={Palette.textSubtle} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar simulados..."
-          placeholderTextColor={Palette.textSubtle}
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-      </View>
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 12 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+        }
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>Simulados</Text>
+              <Text style={styles.subtitle}>Teste seus conhecimentos</Text>
+            </View>
+            <View style={styles.searchContainer}>
+              <Search size={18} color={Palette.textSubtle} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar simulados..."
+                placeholderTextColor={Palette.textSubtle}
+                value={search}
+                onChangeText={setSearch}
+                returnKeyType="search"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+            </View>
+          </>
+        }
         ListEmptyComponent={
           <EmptyState
             icon={FileCheck}

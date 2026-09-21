@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Calendar, Hash, Search, ShieldCheck, XCircle } from 'lucide-react-native';
 
@@ -61,9 +61,12 @@ export default function VerificarScreen() {
     <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <View style={styles.backBtn} onTouchEnd={() => router.back()}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+          >
             <ArrowLeft size={20} color={Palette.text} />
-          </View>
+          </Pressable>
           <Text style={styles.title}>Verificar</Text>
         </View>
         <Text style={styles.subtitle}>Valide a autenticidade de um certificado</Text>

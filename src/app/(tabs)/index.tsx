@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BookOpen, ClipboardList, Flame, LogOut, TrendingUp } from 'lucide-react-native';
+import {
+  BookOpen,
+  CalendarDays,
+  ClipboardList,
+  Flame,
+  LogOut,
+  Medal,
+  Star,
+  TrendingUp,
+} from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
@@ -97,15 +106,32 @@ export default function DashboardScreen() {
         })}
       </View>
 
-      <Text style={styles.sectionTitle}>Sua jornada</Text>
-      <Card>
-        <View style={styles.journeyRow}>
-          <BookOpen size={18} color={Palette.highlight} />
-          <Text style={styles.journeyText}>
-            Complete cursos e simulados para ganhar XP e subir no ranking.
-          </Text>
-        </View>
-      </Card>
+      {profile ? (
+        <>
+          <Text style={styles.sectionTitle}>Sua jornada</Text>
+          <Card style={styles.journeyCard}>
+            <View style={styles.journeyGrid}>
+              <View style={styles.journeyCol}>
+                <Star size={14} color={Palette.amber} />
+                <Text style={styles.journeyValue}>Nível {profile.level}</Text>
+                <Text style={styles.journeyLabel}>Nível atual</Text>
+              </View>
+              <View style={styles.journeyCol}>
+                <Medal size={14} color={Palette.violet} />
+                <Text style={styles.journeyValue} numberOfLines={1}>
+                  {profile.league}
+                </Text>
+                <Text style={styles.journeyLabel}>Liga</Text>
+              </View>
+              <View style={styles.journeyCol}>
+                <CalendarDays size={14} color={Palette.sky} />
+                <Text style={styles.journeyValue}>{profile.activeDays ?? 0}</Text>
+                <Text style={styles.journeyLabel}>Dias ativos</Text>
+              </View>
+            </View>
+          </Card>
+        </>
+      ) : null}
     </Screen>
   );
 }
@@ -201,15 +227,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  journeyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  journeyCard: {
+    marginBottom: 8,
   },
-  journeyText: {
+  journeyGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  journeyCol: {
     flex: 1,
-    color: Palette.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
+    alignItems: 'center',
+    gap: 4,
+  },
+  journeyValue: {
+    color: Palette.text,
+    fontSize: 14,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  journeyLabel: {
+    color: Palette.textSubtle,
+    fontSize: 11,
+    textAlign: 'center',
   },
 });

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Image, Pressable, RefreshControl, Text, TextInput, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BookOpen, Clock, Layers, Search } from 'lucide-react-native';
 
@@ -18,14 +18,21 @@ export default function CursosScreen() {
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!token) return;
+    setRefreshing(true);
     coursesApi(token)
       .list()
       .then((res) => setCourses(res.data))
-      .catch(() => setError(true));
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
   }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = useMemo(() => {
     if (!courses) return null;
@@ -49,29 +56,36 @@ export default function CursosScreen() {
   if (!courses) return <Loading label="Carregando cursos..." />;
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Cursos</Text>
-        <Text style={styles.subtitle}>{courses.length} disponíveis</Text>
-      </View>
-      <View style={styles.searchContainer}>
-        <Search size={18} color={Palette.textSubtle} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar cursos..."
-          placeholderTextColor={Palette.textSubtle}
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-      </View>
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 12 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+        }
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>Cursos</Text>
+              <Text style={styles.subtitle}>{courses.length} disponíveis</Text>
+            </View>
+            <View style={styles.searchContainer}>
+              <Search size={18} color={Palette.textSubtle} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar cursos..."
+                placeholderTextColor={Palette.textSubtle}
+                value={search}
+                onChangeText={setSearch}
+                returnKeyType="search"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+            </View>
+          </>
+        }
         ListEmptyComponent={
           <EmptyState
             icon={BookOpen}

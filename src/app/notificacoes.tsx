@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  Alert,
   FlatList,
+  RefreshControl,
   Text,
   View,
   StyleSheet,
@@ -62,10 +64,12 @@ export default function NotificacoesScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchNotifications = useCallback(() => {
+  const load = useCallback(() => {
     if (!token) return;
     setLoading(true);
+    setRefreshing(true);
     notificationsApi(token)
       .list()
       .then((res) => {
@@ -73,12 +77,15 @@ export default function NotificacoesScreen() {
         setUnreadCount(res.unreadCount ?? 0);
       })
       .catch(() => setError(true))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
   }, [token]);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    load();
+  }, [load]);
 
   const handleMarkRead = useCallback(
     async (id: string) => {
@@ -89,7 +96,11 @@ export default function NotificacoesScreen() {
           prev?.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)) ?? null,
         );
         setUnreadCount((prev) => Math.max(0, prev - 1));
-      } catch {}
+      } catch {
+        setNotifications((prev) =>
+          prev?.map((n) => (n.id === id ? { ...n, readAt: null } : n)) ?? null,
+        );
+      }
     },
     [token],
   );
@@ -97,13 +108,16 @@ export default function NotificacoesScreen() {
   const handleMarkAllRead = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await notificationsApi(token).markAllRead();
+      await notificationsApi(token).markAllRead();
       setNotifications((prev) =>
         prev?.map((n) => (n.readAt ? n : { ...n, readAt: new Date().toISOString() })) ?? null,
       );
       setUnreadCount(0);
-    } catch {}
-  }, [token]);
+    } catch {
+      Alert.alert('Erro', 'Não foi possível marcar como lidas.');
+      load();
+    }
+  }, [token, load]);
 
   const handlePress = useCallback(
     (item: Notification) => {
@@ -163,27 +177,7 @@ export default function NotificacoesScreen() {
   }
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>Voltar</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTitle}>
-          <Text style={styles.title}>Notificações</Text>
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
-          )}
-        </View>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
-            <CheckCheck size={16} color={Palette.highlight} />
-            <Text style={styles.markAllText}>Marcar tudo como lido</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       {loading && !notifications ? (
         <Loading label="Carregando notificações..." />
       ) : (
@@ -191,7 +185,33 @@ export default function NotificacoesScreen() {
           data={notifications}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 32, gap: Spacing.sm }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+          }
+          ListHeaderComponent={
+            <>
+              <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                  <Text style={styles.backText}>Voltar</Text>
+                </TouchableOpacity>
+                <View style={styles.headerTitle}>
+                  <Text style={styles.title}>Notificações</Text>
+                  {unreadCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unreadCount}</Text>
+                    </View>
+                  )}
+                </View>
+                {unreadCount > 0 && (
+                  <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
+                    <CheckCheck size={16} color={Palette.highlight} />
+                    <Text style={styles.markAllText}>Marcar tudo como lido</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
+          }
           ListEmptyComponent={
             <EmptyState
               icon={BellOff}

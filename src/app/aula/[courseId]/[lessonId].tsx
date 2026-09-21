@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Text, View, StyleSheet, ScrollView } from 'react-native';
+import { Alert, Pressable, Text, View, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, AlertCircle } from 'lucide-react-native';
@@ -71,9 +71,12 @@ export default function AulaPlayerScreen() {
     <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View style={styles.backBtn} onTouchEnd={() => router.back()}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+          >
             <ArrowLeft size={20} color={Palette.text} />
-          </View>
+          </Pressable>
         </View>
 
         {videoUrl ? (

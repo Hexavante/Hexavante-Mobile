@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Text, View, StyleSheet } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Calendar, CircleCheck, History } from 'lucide-react-native';
 
@@ -33,6 +33,7 @@ export default function HistoricoScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadPage = useCallback(
     async (t: string, p: number, append: boolean) => {
@@ -44,10 +45,17 @@ export default function HistoricoScreen() {
     [],
   );
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!token) return;
-    loadPage(token, 1, false).catch(() => setError(true));
+    setRefreshing(true);
+    loadPage(token, 1, false)
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
   }, [token, loadPage]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleLoadMore = useCallback(() => {
     if (!token || loadingMore || page >= totalPages) return;
@@ -73,15 +81,20 @@ export default function HistoricoScreen() {
   if (!attempts) return <Loading label="Carregando histórico..." />;
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <Header onBack={() => router.back()} />
-
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       <FlatList
         data={attempts}
         keyExtractor={(item) => item.id}
-        scrollEnabled={false}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing.lg, gap: Spacing.sm }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 32, gap: Spacing.sm }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+        }
+        ListHeaderComponent={
+          <>
+            <Header onBack={() => router.back()} />
+          </>
+        }
         ListEmptyComponent={
           <EmptyState
             icon={History}
@@ -141,9 +154,12 @@ function Header({ onBack }: { onBack: () => void }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <View style={styles.backBtn} onTouchEnd={onBack}>
+        <Pressable
+          onPress={onBack}
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+        >
           <ArrowLeft size={20} color={Palette.text} />
-        </View>
+        </Pressable>
         <Text style={styles.title}>Histórico</Text>
       </View>
       <Text style={styles.subtitle}>Seus simulados resolvidos</Text>

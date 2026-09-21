@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, Text, View, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, FlatList, Pressable, RefreshControl, Text, View, StyleSheet } from 'react-native';
 import { Coins, ShoppingCart } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
@@ -17,19 +17,24 @@ export default function LojaScreen() {
   const [items, setItems] = useState<ShopItem[] | null>(null);
   const [coins, setCoins] = useState<number | null>(null);
   const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!token) return;
+    setRefreshing(true);
     shopApi(token)
       .state()
       .then((state) => {
         setItems(state.items);
         setCoins(state.coins);
       })
-      .catch(() => setError(true));
-  };
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
+  }, [token]);
 
-  useEffect(load, [token]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const buy = (item: ShopItem) => {
     if (!token) return;
@@ -65,22 +70,28 @@ export default function LojaScreen() {
   if (!items || coins === null) return <Loading label="Carregando loja..." />;
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Loja</Text>
-        <View style={styles.coinsBadge}>
-          <Coins size={16} color={Palette.gold} />
-          <Text style={styles.coinsText}>{coins}</Text>
-        </View>
-      </View>
-
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
         numColumns={2}
         showsVerticalScrollIndicator={false}
         columnWrapperStyle={styles.column}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 12 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+        }
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>Loja</Text>
+              <View style={styles.coinsBadge}>
+                <Coins size={16} color={Palette.gold} />
+                <Text style={styles.coinsText}>{coins}</Text>
+              </View>
+            </View>
+          </>
+        }
         ListEmptyComponent={
           <EmptyState icon={ShoppingCart} title="Loja vazia" description="Novos itens chegarão em breve." />
         }

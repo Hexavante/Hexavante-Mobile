@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { FlatList, Pressable, Text, View, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Award, ArrowLeft, Calendar, Hash, Tag } from 'lucide-react-native';
 
@@ -22,14 +22,21 @@ export default function CertificadosScreen() {
   const router = useRouter();
   const [certificates, setCertificates] = useState<Certificate[] | null>(null);
   const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!token) return;
+    setRefreshing(true);
     certificatesApi(token)
       .list()
       .then((res) => setCertificates(res.certificates ?? []))
-      .catch(() => setError(true));
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
   }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (error) {
     return (
@@ -47,14 +54,20 @@ export default function CertificadosScreen() {
   if (!certificates) return <Loading label="Carregando certificados..." />;
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <Header onBack={() => router.back()} />
-
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       <FlatList
         data={certificates}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing.lg, gap: Spacing.sm }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 32, gap: Spacing.sm }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+        }
+        ListHeaderComponent={
+          <>
+            <Header onBack={() => router.back()} />
+          </>
+        }
         ListEmptyComponent={
           <EmptyState
             icon={Award}

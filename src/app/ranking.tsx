@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { FlatList, Text, View, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { FlatList, RefreshControl, Text, View, StyleSheet } from 'react-native';
 import { Medal, TrendingUp } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
@@ -24,19 +24,26 @@ export default function RankingScreen() {
   const [entries, setEntries] = useState<RankingEntry[] | null>(null);
   const [myRank, setMyRank] = useState<MyRank | null>(null);
   const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!token) return;
+    setRefreshing(true);
     gamificationApi(token)
       .ranking()
       .then((ranking) => {
         setEntries(ranking.data ?? []);
       })
-      .catch(() => setError(true));
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
     api<MyRank | null>('/api/v1/rankings/me', { token })
       .then((me) => setMyRank(me ?? null))
       .catch(() => setMyRank(null));
   }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (error) {
     return (
@@ -53,27 +60,33 @@ export default function RankingScreen() {
   if (!entries) return <Loading label="Carregando ranking..." />;
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Ranking</Text>
-        <Text style={styles.subtitle}>Os melhores da plataforma</Text>
-      </View>
-
-      {myRank?.rank != null ? (
-        <View style={styles.meCard}>
-          <Text style={styles.meText}>
-            Sua posição: #{myRank.rank}
-            {myRank.totalXp != null ? ` · ${myRank.totalXp} XP` : ''}
-            {myRank.league ? ` · ${myRank.league}` : ''}
-          </Text>
-        </View>
-      ) : null}
-
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       <FlatList
         data={entries}
         keyExtractor={(item) => item.userId}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 8 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+        }
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>Ranking</Text>
+              <Text style={styles.subtitle}>Os melhores da plataforma</Text>
+            </View>
+
+            {myRank?.rank != null ? (
+              <View style={styles.meCard}>
+                <Text style={styles.meText}>
+                  Sua posição: #{myRank.rank}
+                  {myRank.totalXp != null ? ` · ${myRank.totalXp} XP` : ''}
+                  {myRank.league ? ` · ${myRank.league}` : ''}
+                </Text>
+              </View>
+            ) : null}
+          </>
+        }
         ListEmptyComponent={
           <EmptyState icon={Medal} title="Ranking vazio" description="Seja o primeiro a aparecer aqui." />
         }

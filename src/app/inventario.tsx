@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   Pressable,
+  RefreshControl,
   Text,
   View,
   StyleSheet,
@@ -33,16 +34,21 @@ export default function InventarioScreen() {
   const [items, setItems] = useState<InventoryEntry[] | null>(null);
   const [error, setError] = useState(false);
   const [equippingId, setEquippingId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(() => {
     if (!token) return;
+    setRefreshing(true);
     shopApi(token)
       .inventory()
       .then((res) => setItems(res.items))
-      .catch(() => setError(true));
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
   }, [token]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const toggleEquip = (entry: InventoryEntry) => {
     if (!token || equippingId) return;
@@ -75,20 +81,26 @@ export default function InventarioScreen() {
   if (!items) return <Loading label="Carregando inventário..." />;
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={20} color={Palette.text} />
-        </Pressable>
-        <Text style={styles.title}>Inventário</Text>
-        <View style={styles.backBtn} />
-      </View>
-
+    <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
       <FlatList
         data={items}
         keyExtractor={(e) => e.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 10 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Palette.highlight} />
+        }
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                <ArrowLeft size={20} color={Palette.text} />
+              </Pressable>
+              <Text style={styles.title}>Inventário</Text>
+              <View style={styles.backBtn} />
+            </View>
+          </>
+        }
         ListEmptyComponent={
           <EmptyState
             icon={Backpack}

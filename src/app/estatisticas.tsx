@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, BarChart3, ListChecks, Medal, Target } from 'lucide-react-native';
 
@@ -28,17 +28,24 @@ export default function EstatisticasScreen() {
   const [subjects, setSubjects] = useState<SubjectStat[]>([]);
   const [evolution, setEvolution] = useState<EvolutionPoint[]>([]);
   const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!token) return;
+    setRefreshing(true);
     Promise.all([examsApi(token).stats(), examsApi(token).subjectStats(), examsApi(token).evolution()])
       .then(([s, subj, evo]) => {
         setStats(s);
         setSubjects(Array.isArray(subj) ? subj : []);
         setEvolution(Array.isArray(evo) ? evo : []);
       })
-      .catch(() => setError(true));
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
   }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (error) {
     return (
@@ -58,7 +65,11 @@ export default function EstatisticasScreen() {
   const lastFive = [...evolution].slice(-5).reverse();
 
   return (
-    <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
+    <Screen
+      contentContainerStyle={{ padding: 0, paddingBottom: 32 }}
+      refreshing={refreshing}
+      onRefresh={load}
+    >
       <Header onBack={() => router.back()} />
 
       <View style={styles.body}>
@@ -134,9 +145,12 @@ function Header({ onBack }: { onBack: () => void }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <View style={styles.backBtn} onTouchEnd={onBack}>
+        <Pressable
+          onPress={onBack}
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+        >
           <ArrowLeft size={20} color={Palette.text} />
-        </View>
+        </Pressable>
         <Text style={styles.title}>Estatísticas</Text>
       </View>
       <Text style={styles.subtitle}>Seu desempenho nos estudos</Text>

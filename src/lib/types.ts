@@ -55,7 +55,7 @@ export type Exam = {
   description: string | null;
   examType: string;
   questionCount: number;
-  timeLimit: number;
+  timeLimit: number | null;
   isPremiumOnly: boolean;
   userAttemptCount: number;
   coverImage?: string | null;
