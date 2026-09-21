@@ -74,7 +74,7 @@ export default function RootLayout() {
           <Stack.Screen name="inventario" />
           <Stack.Screen name="certificados" />
           <Stack.Screen name="notificacoes" />
-          <Stack.Screen name="tutorial/[id]" />
+          <Stack.Screen name="tutorial" />
         </Stack>
       </AuthProvider>
     </ThemeProvider>
