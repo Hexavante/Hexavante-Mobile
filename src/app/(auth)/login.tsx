@@ -6,10 +6,11 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
+import { VerifyCodeForm } from '@/components/auth/verify-code';
 import { Palette, Radius } from '@/constants/theme';
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, pendingVerification } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,29 +47,35 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
-          <Input
-            label="E-mail"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="voce@email.com"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
-          />
-          <Input
-            label="Senha"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Sua senha"
-            secureTextEntry
-            autoComplete="password"
-            textContentType="password"
-          />
+          {pendingVerification ? (
+            <VerifyCodeForm />
+          ) : (
+            <>
+              <Input
+                label="E-mail"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="voce@email.com"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+                textContentType="emailAddress"
+              />
+              <Input
+                label="Senha"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Sua senha"
+                secureTextEntry
+                autoComplete="password"
+                textContentType="password"
+              />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Button label="Entrar" loading={loading} onPress={() => void handleSubmit()} size="lg" />
+              <Button label="Entrar" loading={loading} onPress={() => void handleSubmit()} size="lg" />
+            </>
+          )}
         </View>
 
         <View style={styles.footer}>

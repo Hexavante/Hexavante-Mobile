@@ -7,6 +7,10 @@ export const APP_URL = extra.appUrl || 'https://hexavante.com.br';
 
 const TOKEN_KEY = 'hexavante_access_token';
 
+// A API autentica via cookie __Secure-hexavante.session_token
+// (parseSessionToken só lê cookie — Authorization: Bearer é ignorado).
+const SESSION_COOKIE = '__Secure-hexavante.session_token';
+
 export async function getToken(): Promise<string | null> {
   try {
     return await SecureStore.getItemAsync(TOKEN_KEY);
@@ -36,7 +40,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
 
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers['Cookie'] = `${SESSION_COOKIE}=${token}`;
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method,
@@ -79,54 +83,134 @@ export type AuthSession = {
   token: string;
 };
 
+type ApiUser = {
+  id: string;
+  name: string;
+  email: string;
+  username?: string;
+  avatarUrl?: string | null;
+  roles?: string[];
+};
+
+function normalizeUser(u: ApiUser): AuthSession['user'] {
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    username: u.username,
+    image: u.avatarUrl ?? null,
+    role: u.roles?.[0],
+  };
+}
+
+export class VerificationRequiredError extends Error {
+  verificationId: string;
+  reason: string;
+  constructor(verificationId: string, reason: string) {
+    super('Verificação necessária. Enviamos um código para o seu e-mail.');
+    this.name = 'VerificationRequiredError';
+    this.verificationId = verificationId;
+    this.reason = reason;
+  }
+}
+
 export async function signInWithEmail(email: string, password: string): Promise<AuthSession> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/sign-in/email`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
 
   const data = (await res.json()) as {
-    token?: string;
-    user?: AuthSession['user'];
+    user?: ApiUser;
+    session?: { token?: string };
+    requiresVerification?: boolean;
+    verificationId?: string;
+    reason?: string;
     message?: string;
     error?: string;
   };
 
-  if (!res.ok || !data.token || !data.user) {
+  if (res.status === 202 && data.requiresVerification && data.verificationId) {
+    throw new VerificationRequiredError(data.verificationId, data.reason ?? 'DEVICE');
+  }
+
+  if (!res.ok || !data.user || !data.session?.token) {
     throw new ApiError(res.status, data.message || data.error || 'Falha ao entrar');
   }
 
-  return { user: data.user, token: data.token };
+  return { user: normalizeUser(data.user), token: data.session.token };
 }
 
-export async function registerWithEmail(
-  name: string,
-  email: string,
-  password: string,
-): Promise<AuthSession> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/sign-up/email`, {
+export async function verifyDeviceCode(verificationId: string, code: string): Promise<AuthSession> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/verify-device`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ verificationId, code }),
   });
 
   const data = (await res.json()) as {
-    token?: string;
-    user?: AuthSession['user'];
+    user?: ApiUser;
+    session?: { token?: string };
     message?: string;
     error?: string;
   };
 
-  if (!res.ok || !data.token || !data.user) {
-    throw new ApiError(res.status, data.message || data.error || 'Falha ao cadastrar');
+  if (!res.ok || !data.user || !data.session?.token) {
+    throw new ApiError(res.status, data.message || data.error || 'Código inválido');
   }
 
-  return { user: data.user, token: data.token };
+  return { user: normalizeUser(data.user), token: data.session.token };
+}
+
+export async function resendDeviceCode(verificationId: string): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/resend-device-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ verificationId }),
+  });
+
+  const data = (await res.json()) as {
+    verificationId?: string;
+    message?: string;
+    error?: string;
+  };
+
+  if (!res.ok || !data.verificationId) {
+    throw new ApiError(res.status, data.message || data.error || 'Falha ao reenviar código');
+  }
+
+  return data.verificationId;
+}
+
+export type RegisterData = {
+  username: string;
+  fullName: string;
+  email: string;
+  password: string;
+  birthDate: string; // YYYY-MM-DD
+};
+
+export async function registerWithEmail(data: RegisterData): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  const body = (await res.json().catch(() => ({}))) as {
+    message?: string;
+    error?: string;
+  };
+
+  if (!res.ok && res.status !== 201) {
+    throw new ApiError(res.status, body.message || body.error || 'Falha ao cadastrar');
+  }
 }
 
 export async function getSession(token: string): Promise<{ user: AuthSession['user'] }> {
-  return api<{ user: AuthSession['user'] }>('/api/auth/get-session', { token });
+  const res = await api<{ user: ApiUser }>('/api/v1/auth/session', { token });
+  return { user: normalizeUser(res.user) };
 }
 
 export function socialAuthUrl(provider: 'google' | 'github'): string {
