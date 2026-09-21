@@ -76,6 +76,9 @@ export default function LoginScreen() {
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
               <Button label="Entrar" loading={loading} onPress={() => void handleSubmit()} size="lg" />
+              <Link href="/recuperar-senha" style={styles.forgotLink}>
+                Esqueci minha senha
+              </Link>
             </>
           )}
         </View>
@@ -135,6 +138,11 @@ const styles = StyleSheet.create({
   footerText: {
     color: Palette.textMuted,
     fontSize: 14,
+  },
+  forgotLink: {
+    color: Palette.highlight,
+    fontSize: 13,
+    textAlign: 'center',
   },
   footerLink: {
     color: Palette.highlight,

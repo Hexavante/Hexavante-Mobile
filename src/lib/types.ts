@@ -5,6 +5,8 @@ export type XpProfile = {
   league: string;
   xpToNextLevel: number;
   progressPercent: number;
+  streakDays?: number;
+  activeDays?: number;
 };
 
 export type Course = {

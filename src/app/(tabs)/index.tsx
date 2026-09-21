@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BookOpen, ClipboardList, LogOut, TrendingUp } from 'lucide-react-native';
+import { BookOpen, ClipboardList, Flame, LogOut, TrendingUp } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
@@ -60,6 +60,19 @@ export default function DashboardScreen() {
           />
         ) : null}
         {profile ? <XpBar profile={profile} /> : null}
+      </Card>
+
+      <Card style={styles.streakCard}>
+        <View style={styles.streakRow}>
+          <View style={styles.streakIcon}>
+            <Flame size={22} color={Palette.orange} />
+          </View>
+          <Text style={styles.streakText}>
+            {profile?.streakDays && profile.streakDays > 0
+              ? `${profile.streakDays} ${profile.streakDays === 1 ? 'dia seguido' : 'dias seguidos'}`
+              : 'Comece seu streak hoje!'}
+          </Text>
+        </View>
       </Card>
 
       <Text style={styles.sectionTitle}>Continue estudando</Text>
@@ -129,6 +142,30 @@ const styles = StyleSheet.create({
   hudCard: {
     marginBottom: 24,
     ...shadow,
+  },
+  streakCard: {
+    marginBottom: 24,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  streakIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    backgroundColor: `${Palette.orange}1f`,
+    borderColor: `${Palette.orange}40`,
+  },
+  streakText: {
+    flex: 1,
+    color: Palette.text,
+    fontSize: 14,
+    fontWeight: '700',
   },
   sectionTitle: {
     fontSize: 16,

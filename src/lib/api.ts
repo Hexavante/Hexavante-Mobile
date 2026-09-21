@@ -216,3 +216,12 @@ export async function getSession(token: string): Promise<{ user: AuthSession['us
 export function socialAuthUrl(provider: 'google' | 'github'): string {
   return `${API_BASE_URL}/api/auth/sign-in/social?provider=${provider}&callbackURL=${encodeURIComponent(APP_URL)}`;
 }
+
+export async function requestPasswordReset(email: string): Promise<string | null> {
+  const data = await api<{ ok: boolean; verificationId: string | null }>('/api/v1/auth/forgot-password', { method: 'POST', body: { email } });
+  return data.verificationId;
+}
+
+export async function resetPassword(verificationId: string, code: string, password: string): Promise<void> {
+  await api<{ ok: boolean }>('/api/v1/auth/reset-password', { method: 'POST', body: { verificationId, code, password } });
+}
