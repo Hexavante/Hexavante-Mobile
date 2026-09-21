@@ -17,7 +17,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: P.highlight,
         tabBarInactiveTintColor: P.textSubtle,
         tabBarStyle: {
-          backgroundColor: '#0b0e1a',
+          backgroundColor: P.surfaceStrong,
           borderTopColor: P.border,
         },
       }}

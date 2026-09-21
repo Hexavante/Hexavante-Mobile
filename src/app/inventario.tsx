@@ -14,6 +14,8 @@ import { ArrowLeft, Backpack, Shield, Shirt } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { shopApi } from '@/lib/features';
+import { getThemeIdOf } from '@/lib/theme-shop';
+import { useThemeChoice } from '@/lib/theme-context';
 import type { InventoryEntry } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Card } from '@/components/ui/card';
@@ -35,6 +37,7 @@ export default function InventarioScreen() {
   const styles = useMemo(() => makeStyles(P), [P]);
   const token = useToken();
   const router = useRouter();
+  const { themeId, setThemeId } = useThemeChoice();
   const [items, setItems] = useState<InventoryEntry[] | null>(null);
   const [error, setError] = useState(false);
   const [equippingId, setEquippingId] = useState<string | null>(null);
@@ -116,6 +119,8 @@ export default function InventarioScreen() {
           const catIcon = CATEGORY_ICONS[entry.item.category] ?? Shield;
           const CatIcon = catIcon;
           const isBusy = equippingId === entry.id;
+          const entryThemeId = getThemeIdOf(entry.item);
+          const isThemeActive = entryThemeId != null && entryThemeId === themeId;
 
           return (
             <Card style={styles.card}>
@@ -135,24 +140,39 @@ export default function InventarioScreen() {
                   <Text style={styles.category}>{entry.item.category}</Text>
                 </View>
 
-                <Pressable
-                  disabled={isBusy}
-                  onPress={() => toggleEquip(entry)}
-                  style={[
-                    styles.equipBtn,
-                    entry.isEquipped && styles.equipBtnActive,
-                    isBusy && { opacity: 0.5 },
-                  ]}
-                >
-                  <Text
+                {entryThemeId ? (
+                  <Pressable
+                    onPress={() => {
+                      void setThemeId(entryThemeId).then(() =>
+                        Alert.alert('Tema aplicado!', entry.item.name),
+                      );
+                    }}
+                    style={[styles.equipBtn, isThemeActive && styles.equipBtnActive]}
+                  >
+                    <Text style={[styles.equipText, isThemeActive && styles.equipTextActive]}>
+                      {isThemeActive ? 'Em uso' : 'Usar tema'}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    disabled={isBusy}
+                    onPress={() => toggleEquip(entry)}
                     style={[
-                      styles.equipText,
-                      entry.isEquipped && styles.equipTextActive,
+                      styles.equipBtn,
+                      entry.isEquipped && styles.equipBtnActive,
+                      isBusy && { opacity: 0.5 },
                     ]}
                   >
-                    {entry.isEquipped ? 'Equipado' : 'Equipar'}
-                  </Text>
-                </Pressable>
+                    <Text
+                      style={[
+                        styles.equipText,
+                        entry.isEquipped && styles.equipTextActive,
+                      ]}
+                    >
+                      {entry.isEquipped ? 'Equipado' : 'Equipar'}
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             </Card>
           );
