@@ -27,7 +27,9 @@ export function coursesApi(token: string) {
     enroll: (id: string) => api<{ success: boolean }>(`/api/v1/courses/${id}/enroll`, { method: 'POST', token }),
     progress: (id: string) => api<{ progress: unknown }>(`/api/v1/courses/${id}/progress`, { token }),
     lesson: (courseId: string, lessonId: string) =>
-      api<{ lesson: LessonDetail }>(`/api/v1/courses/${courseId}/lessons/${lessonId}`, { token }),
+      api<{ lesson: LessonDetail; isFavorite?: boolean; note?: string | null }>(`/api/v1/courses/${courseId}/lessons/${lessonId}`, { token }),
+    toggleFavorite: (courseId: string, lessonId: string) =>
+      api<{ isFavorite: boolean }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/favorite`, { method: 'POST', token }),
     completeLesson: (courseId: string, lessonId: string) =>
       api<{ success: boolean }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/complete`, { method: 'POST', token }),
   };
@@ -71,6 +73,8 @@ export function gamificationApi(token: string) {
 export function shopApi(token: string) {
   return {
     state: () => api<ShopState>('/api/v1/shop', { token }),
+    premiumTrial: () =>
+      api<{ premium: boolean; premiumExpiresAt: string | null }>('/api/v1/shop/premium/trial', { method: 'POST', token }),
     purchase: (itemId: string) => api<{ success: boolean }>('/api/v1/shop/purchase', { method: 'POST', body: { storeItemId: itemId }, token }),
     equip: (inventoryId: string) => api<{ success: boolean }>('/api/v1/shop/equip', { method: 'POST', body: { inventoryId }, token }),
     inventory: () => api<{ items: InventoryEntry[] }>('/api/v1/inventory', { token }),
@@ -106,6 +110,7 @@ export function tutorialsApi(token?: string) {
       return api<{ data: Tutorial[]; pagination: Pagination }>(`/api/v1/tutorials?${params}`, { token });
     },
     detail: (id: string) => api<{ tutorial: Tutorial }>(`/api/v1/tutorials/${id}`, { token }),
+    view: (id: string) => api<unknown>(`/api/v1/tutorials/${id}/view`, { method: 'POST', token }),
   };
 }
 

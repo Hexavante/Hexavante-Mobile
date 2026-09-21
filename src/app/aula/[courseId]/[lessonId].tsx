@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, Text, View, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, AlertCircle, Heart } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { coursesApi } from '@/lib/features';
@@ -14,21 +14,55 @@ import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Palette, Radius, Spacing } from '@/constants/theme';
 
+type LessonResponse = {
+  lesson: LessonDetail & { isFavorite?: boolean; note?: string | null };
+  isFavorite?: boolean;
+  note?: string | null;
+};
+
 export default function AulaPlayerScreen() {
   const { courseId, lessonId } = useLocalSearchParams<{ courseId: string; lessonId: string }>();
   const token = useToken();
   const router = useRouter();
   const [lesson, setLesson] = useState<LessonDetail | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [favoriting, setFavoriting] = useState(false);
 
   useEffect(() => {
     if (!token || !courseId || !lessonId) return;
     coursesApi(token)
       .lesson(String(courseId), String(lessonId))
-      .then((res) => setLesson(res.lesson))
+      .then((res) => {
+        const data = res as LessonResponse;
+        setLesson(data.lesson);
+        const fav =
+          data.isFavorite ?? data.lesson?.isFavorite ?? false;
+        setIsFavorite(fav);
+        const lessonNote = data.note ?? data.lesson?.note ?? null;
+        setNote(typeof lessonNote === 'string' ? lessonNote : null);
+      })
       .catch(() => setError(true));
   }, [token, courseId, lessonId]);
+
+  const handleToggleFavorite = () => {
+    if (!token || !courseId || !lessonId || favoriting) return;
+    const previous = isFavorite;
+    setIsFavorite(!previous);
+    setFavoriting(true);
+    coursesApi(token)
+      .toggleFavorite(String(courseId), String(lessonId))
+      .then((res) => {
+        if (typeof res?.isFavorite === 'boolean') setIsFavorite(res.isFavorite);
+      })
+      .catch(() => {
+        setIsFavorite(previous);
+        Alert.alert('Erro', 'Não foi possível favoritar a aula. Tente novamente.');
+      })
+      .finally(() => setFavoriting(false));
+  };
 
   const handleComplete = () => {
     if (!token || !courseId || !lessonId || completing) return;
@@ -77,11 +111,31 @@ export default function AulaPlayerScreen() {
           >
             <ArrowLeft size={20} color={Palette.text} />
           </Pressable>
+          <Pressable
+            onPress={handleToggleFavorite}
+            accessibilityLabel={isFavorite ? 'Remover dos favoritos' : 'Favoritar aula'}
+            style={({ pressed }) => [styles.favBtn, pressed && { opacity: 0.7 }]}
+          >
+            <Heart
+              size={20}
+              color={isFavorite ? Palette.red : Palette.textMuted}
+              fill={isFavorite ? Palette.red : 'transparent'}
+            />
+          </Pressable>
         </View>
 
         {videoUrl ? (
           <View style={styles.videoContainer}>
             <LessonVideo videoUrl={videoUrl} />
+          </View>
+        ) : null}
+
+        {note ? (
+          <View style={styles.noteWrapper}>
+            <Card>
+              <Text style={styles.noteTitle}>Suas anotações</Text>
+              <Text style={styles.noteText}>{note}</Text>
+            </Card>
           </View>
         ) : null}
 
@@ -134,11 +188,24 @@ function LessonVideo({ videoUrl }: { videoUrl: string }) {
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.md,
   },
   backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Palette.surface,
+    borderWidth: 1,
+    borderColor: Palette.border,
+  },
+  favBtn: {
     width: 36,
     height: 36,
     borderRadius: Radius.sm,
@@ -157,6 +224,21 @@ const styles = StyleSheet.create({
   video: {
     width: '100%',
     height: '100%',
+  },
+  noteWrapper: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+  },
+  noteTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Palette.text,
+    marginBottom: 6,
+  },
+  noteText: {
+    fontSize: 14,
+    color: Palette.textMuted,
+    lineHeight: 21,
   },
   info: {
     padding: Spacing.lg,

@@ -24,7 +24,14 @@ export default function TutorialDetailScreen() {
     if (!id) return;
     tutorialsApi(token ?? undefined)
       .detail(id)
-      .then((res) => setTutorial(res.tutorial))
+      .then((res) => {
+        setTutorial(res.tutorial);
+        // Fire-and-forget: registra a visualização sem bloquear a UI.
+        tutorialsApi(token ?? undefined)
+          .view(String(id))
+          .then(() => {})
+          .catch(() => {});
+      })
       .catch(() => setError(true));
   }, [token, id]);
 
