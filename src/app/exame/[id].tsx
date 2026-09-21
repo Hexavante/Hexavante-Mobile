@@ -43,7 +43,7 @@ type Attempt = {
   attemptId: string;
   examId: string;
   title: string;
-  timeLimit: number;
+  timeLimit: number | null;
   startedAt: string;
   questions: Question[];
 };
@@ -54,6 +54,14 @@ type Result = {
   totalQuestions: number;
   percentage: number;
   finishedAt: string;
+};
+
+type ExamInfo = {
+  title: string;
+  description?: string | null;
+  questionCount: number;
+  timeLimit: number | null;
+  examType: string;
 };
 
 type Mode = 'preview' | 'exam' | 'results';
@@ -68,10 +76,12 @@ export default function ExameDetailScreen() {
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [exam, setExam] = useState<ExamInfo | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  // null = prova sem limite de tempo (timer oculto)
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(0);
   const [result, setResult] = useState<Result | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -79,11 +89,11 @@ export default function ExameDetailScreen() {
   useEffect(() => {
     if (!id || mode !== 'preview') return;
     setLoading(true);
-    api<{ exam: { title: string; questionCount: number; timeLimit: number; examType: string; description?: string } }>(
-      `/api/v1/exams/${id}`,
-      { token },
-    )
-      .then(() => setLoading(false))
+    api<{ exam: ExamInfo }>(`/api/v1/exams/${id}`, { token })
+      .then((res) => {
+        setExam(res.exam);
+        setLoading(false);
+      })
       .catch(() => {
         setError(true);
         setLoading(false);
@@ -91,12 +101,14 @@ export default function ExameDetailScreen() {
   }, [id, token, mode]);
 
   useEffect(() => {
-    if (mode !== 'exam' || secondsLeft <= 0) return;
+    if (mode !== 'exam' || secondsLeft === null || secondsLeft <= 0) return;
     timerRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
+        if (prev === null) return null;
         if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          handleAutoSubmit();
+          if (timerRef.current) clearInterval(timerRef.current);
+          // timeout: envia direto, sem confirmação — via ref para evitar stale closure
+          void submitRef.current();
           return 0;
         }
         return prev - 1;
@@ -105,7 +117,8 @@ export default function ExameDetailScreen() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [mode, secondsLeft > 0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, secondsLeft !== null && secondsLeft > 0]);
 
   const handleStart = useCallback(async () => {
     if (!id || !token) return;
@@ -118,8 +131,7 @@ export default function ExameDetailScreen() {
       setAttempt(data);
       setCurrentIndex(0);
       setAnswers({});
-      const totalSec = data.timeLimit * 60;
-      setSecondsLeft(totalSec);
+      setSecondsLeft(data.timeLimit != null ? data.timeLimit * 60 : null);
       setMode('exam');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erro ao iniciar';
@@ -129,26 +141,9 @@ export default function ExameDetailScreen() {
     }
   }, [id, token]);
 
-  const handleAutoSubmit = useCallback(() => {
-    void handleSubmit();
-  }, []);
-
-  const handleSubmit = useCallback(async () => {
-    if (!attempt || submitting) return;
-    const unanswered = attempt.questions.length - Object.keys(answers).length;
-    const label =
-      unanswered > 0
-        ? `Você não respondeu ${unanswered} questão(ões). Enviar mesmo assim?`
-        : 'Confirmar envio do simulado?';
-
-    const confirmed = await new Promise<boolean>((resolve) => {
-      Alert.alert('Enviar simulado', label, [
-        { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
-        { text: 'Enviar', onPress: () => resolve(true) },
-      ]);
-    });
-    if (!confirmed) return;
-
+  // Envio direto, sem confirmação (usado no timeout do timer)
+  const doSubmit = useCallback(async () => {
+    if (!attempt || !token) return false;
     if (timerRef.current) clearInterval(timerRef.current);
     setSubmitting(true);
     try {
@@ -166,13 +161,38 @@ export default function ExameDetailScreen() {
       });
       setResult(res);
       setMode('results');
+      return true;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erro ao enviar';
       Alert.alert('Erro', msg);
+      return false;
     } finally {
       setSubmitting(false);
     }
-  }, [attempt, answers, token, submitting]);
+  }, [attempt, answers, token]);
+
+  // Ref sempre atualizada para o timer chamar o submit mais recente
+  const submitRef = useRef(doSubmit);
+  submitRef.current = doSubmit;
+
+  const handleSubmit = useCallback(async () => {
+    if (!attempt || submitting) return;
+    const unanswered = attempt.questions.length - Object.keys(answers).length;
+    const label =
+      unanswered > 0
+        ? `Você não respondeu ${unanswered} questão(ões). Enviar mesmo assim?`
+        : 'Confirmar envio do simulado?';
+
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Alert.alert('Enviar simulado', label, [
+        { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Enviar', onPress: () => resolve(true) },
+      ]);
+    });
+    if (!confirmed) return;
+
+    await doSubmit();
+  }, [attempt, answers, submitting, doSubmit]);
 
   const selectAlternative = useCallback((questionId: string, altId: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: altId }));
@@ -247,8 +267,14 @@ export default function ExameDetailScreen() {
   if (mode === 'exam' && attempt) {
     const q = attempt.questions[currentIndex];
     const total = attempt.questions.length;
-    const answered = Object.keys(answers).length;
-    const timerColor = secondsLeft < 60 ? Palette.red : secondsLeft < 300 ? Palette.amber : Palette.text;
+    const timerColor =
+      secondsLeft === null
+        ? Palette.text
+        : secondsLeft < 60
+          ? Palette.red
+          : secondsLeft < 300
+            ? Palette.amber
+            : Palette.text;
 
     return (
       <View style={styles.examRoot}>
@@ -256,12 +282,14 @@ export default function ExameDetailScreen() {
           <Text style={styles.topTitle} numberOfLines={1}>
             {attempt.title}
           </Text>
-          <View style={styles.timerBadge}>
-            <Clock size={14} color={timerColor} />
-            <Text style={[styles.timerText, { color: timerColor }]}>
-              {formatTime(secondsLeft)}
-            </Text>
-          </View>
+          {secondsLeft !== null ? (
+            <View style={styles.timerBadge}>
+              <Clock size={14} color={timerColor} />
+              <Text style={[styles.timerText, { color: timerColor }]}>
+                {formatTime(secondsLeft)}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.progressOuter}>
@@ -351,8 +379,17 @@ export default function ExameDetailScreen() {
         <View style={styles.iconBox}>
           <FileCheck size={26} color={Palette.violet} />
         </View>
-        <Text style={styles.title}>Simulado</Text>
-        <Text style={styles.subtitle}>Inicie para ver as questões</Text>
+        <Text style={styles.title}>{exam?.title ?? 'Simulado'}</Text>
+        <Text style={styles.subtitle}>
+          {exam
+            ? `${exam.questionCount} questões${exam.timeLimit != null ? ` · ${exam.timeLimit} min` : ' · sem limite de tempo'}`
+            : 'Inicie para ver as questões'}
+        </Text>
+        {exam?.description ? (
+          <Text style={styles.description} numberOfLines={4}>
+            {exam.description}
+          </Text>
+        ) : null}
       </View>
 
       <Button
@@ -393,6 +430,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Palette.textMuted,
     textAlign: 'center',
+  },
+  description: {
+    fontSize: 13,
+    color: Palette.textSubtle,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginTop: 4,
   },
   startBtn: {
     marginTop: 4,

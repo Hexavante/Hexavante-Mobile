@@ -28,11 +28,15 @@ export default function RootLayout() {
   const notificationListener = useRef<ReturnType<typeof addNotificationListener> | null>(null);
 
   useEffect(() => {
-    registerForPushNotifications().then((token) => {
-      if (token) {
-        // TODO: send token to backend POST /api/v1/notifications/register
-      }
-    });
+    registerForPushNotifications()
+      .then((token) => {
+        if (token) {
+          // TODO: send token to backend POST /api/v1/notifications/register
+        }
+      })
+      .catch(() => {
+        // push indisponível (Expo Go sem projectId, emulador, etc.)
+      });
 
     notificationListener.current = addNotificationListener({
       onReceive: (notification: Notification) => {
