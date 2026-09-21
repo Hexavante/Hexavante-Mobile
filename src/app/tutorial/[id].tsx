@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View, Image, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Video, ResizeMode } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Play, Eye, Clock, User, Tag, AlertCircle } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
@@ -19,7 +19,6 @@ export default function TutorialDetailScreen() {
   const [tutorial, setTutorial] = useState<Tutorial | null>(null);
   const [error, setError] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const videoRef = useRef<Video>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -55,17 +54,9 @@ export default function TutorialDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.videoContainer}>
           {tutorial.videoUrl && playing ? (
-            <Video
-              ref={videoRef}
-              source={{ uri: tutorial.videoUrl }}
-              style={styles.video}
-              resizeMode={ResizeMode.CONTAIN}
-              shouldPlay
-              onPlaybackStatusUpdate={(status) => {
-                if (status.isLoaded && status.didJustFinish) {
-                  setPlaying(false);
-                }
-              }}
+            <TutorialVideo
+              videoUrl={tutorial.videoUrl}
+              onFinish={() => setPlaying(false)}
             />
           ) : (
             <Pressable style={styles.thumbnailContainer} onPress={() => setPlaying(true)}>
@@ -151,6 +142,27 @@ export default function TutorialDetailScreen() {
         </View>
       </ScrollView>
     </Screen>
+  );
+}
+
+function TutorialVideo({ videoUrl, onFinish }: { videoUrl: string; onFinish: () => void }) {
+  const player = useVideoPlayer(videoUrl, (p) => {
+    p.play();
+  });
+
+  useEffect(() => {
+    const sub = player.addListener('playToEnd', onFinish);
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player]);
+
+  return (
+    <VideoView
+      player={player}
+      style={styles.video}
+      contentFit="contain"
+      nativeControls
+    />
   );
 }
 

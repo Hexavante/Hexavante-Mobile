@@ -1,39 +1,63 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import type * as Notifications from 'expo-notifications';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+type NotificationsModule = typeof Notifications;
+
+// expo-notifications foi removido do Expo Go (SDK 53+).
+// Import estático quebraria o app inteiro — por isso o carregamento é lazy
+// e todas as funções viram no-op quando o módulo nativo não existe
+// (Expo Go) ou quando não há projectId configurado (dev build).
+function loadModule(): Promise<NotificationsModule | null> {
+  try {
+    const mod = require('expo-notifications') as NotificationsModule;
+    mod.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    return Promise.resolve(mod);
+  } catch {
+    return Promise.resolve(null);
+  }
+}
+
+let cached: Promise<NotificationsModule | null> | null = null;
+function getModule(): Promise<NotificationsModule | null> {
+  if (!cached) cached = loadModule();
+  return cached;
+}
 
 export async function registerForPushNotifications(): Promise<string | null> {
   try {
     if (!Device.isDevice) return null;
 
-    const { status: existing } = await Notifications.getPermissionsAsync();
+    const N = await getModule();
+    if (!N) return null;
+
+    const { status: existing } = await N.getPermissionsAsync();
     let finalStatus = existing;
     if (existing !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = await N.requestPermissionsAsync();
       finalStatus = status;
     }
     if (finalStatus !== 'granted') return null;
 
-    const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
     if (!projectId || projectId === 'your-project-id') return null;
 
-    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = await N.getExpoPushTokenAsync({ projectId });
 
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
+      await N.setNotificationChannelAsync('default', {
         name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: N.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
       });
     }
@@ -48,16 +72,23 @@ export function addNotificationListener(handlers: {
   onReceive?: (notification: Notifications.Notification) => void;
   onTap?: (response: Notifications.NotificationResponse) => void;
 }) {
-  const receiveSub = Notifications.addNotificationReceivedListener(
-    handlers.onReceive ?? (() => {})
-  );
+  let cleanup: (() => void) | null = null;
+  let cancelled = false;
 
-  const responseSub = Notifications.addNotificationResponseReceivedListener(
-    handlers.onTap ?? (() => {})
-  );
+  void getModule().then((N) => {
+    if (!N || cancelled) return;
+    const receiveSub = N.addNotificationReceivedListener(handlers.onReceive ?? (() => {}));
+    const responseSub = N.addNotificationResponseReceivedListener(
+      handlers.onTap ?? (() => {}),
+    );
+    cleanup = () => {
+      receiveSub.remove();
+      responseSub.remove();
+    };
+  });
 
   return () => {
-    receiveSub.remove();
-    responseSub.remove();
+    cancelled = true;
+    cleanup?.();
   };
 }
