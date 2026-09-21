@@ -15,6 +15,7 @@ module.exports = {
   },
   android: {
     package: 'br.com.hexavante.app',
+    versionCode: 1,
     adaptiveIcon: {
       backgroundColor: '#06080f',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -38,6 +39,13 @@ module.exports = {
       },
     ],
     'expo-secure-store',
+    [
+      'expo-notifications',
+      {
+        icon: './assets/images/android-icon-monochrome.png',
+        color: '#06080f',
+      },
+    ],
   ],
   extra: {
     apiUrl: process.env.API_URL || 'https://api.hexavante.com.br',
