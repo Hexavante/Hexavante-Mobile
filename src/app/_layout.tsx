@@ -33,6 +33,11 @@ export default function RootLayout() {
           <Stack.Screen name="ranking" />
           <Stack.Screen name="curso/[id]" />
           <Stack.Screen name="exame/[id]" />
+          <Stack.Screen name="configuracoes" />
+          <Stack.Screen name="inventario" />
+          <Stack.Screen name="certificados" />
+          <Stack.Screen name="notificacoes" />
+          <Stack.Screen name="tutorial/[id]" />
         </Stack>
       </AuthProvider>
     </ThemeProvider>

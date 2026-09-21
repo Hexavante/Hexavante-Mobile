@@ -20,15 +20,18 @@ export default function ExameDetailScreen() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!token || !id) return;
-    examsApi(token)
-      .list()
-      .then((exams) => {
-        const found = exams.find((e) => e.id === id);
-        if (found) setExam(found);
-        else setError(true);
-      })
-      .catch(() => setError(true));
+    if (!id) return;
+    const load = async () => {
+      try {
+        const res = token
+          ? await examsApi(token).detail(id)
+          : await examsApi('').detail(id);
+        setExam(res.exam);
+      } catch {
+        setError(true);
+      }
+    };
+    void load();
   }, [token, id]);
 
   if (error) {
@@ -64,21 +67,20 @@ export default function ExameDetailScreen() {
         <View style={styles.divider} />
         <View style={styles.stat}>
           <Clock size={16} color={Palette.textMuted} />
-          <Text style={styles.statValue}>{exam.durationMinutes}</Text>
+          <Text style={styles.statValue}>{exam.timeLimit}</Text>
           <Text style={styles.statLabel}>minutos</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.stat}>
           <FileCheck size={16} color={Palette.textMuted} />
-          <Text style={styles.statValue}>{exam.subject}</Text>
-          <Text style={styles.statLabel}>matéria</Text>
+          <Text style={styles.statValue}>{exam.examType}</Text>
+          <Text style={styles.statLabel}>tipo</Text>
         </View>
       </Card>
 
-      {exam.bestScore !== null && exam.bestScore !== undefined ? (
+      {exam.userAttemptCount > 0 ? (
         <Card style={styles.bestCard}>
-          <Text style={styles.bestText}>Melhor nota: {exam.bestScore}%</Text>
-          <Text style={styles.bestHint}>{exam.attemptsCount ?? 0} tentativa(s)</Text>
+          <Text style={styles.bestText}>Tentativas: {exam.userAttemptCount}</Text>
         </Card>
       ) : null}
 
@@ -150,10 +152,6 @@ const styles = StyleSheet.create({
     color: Palette.highlight,
     fontSize: 15,
     fontWeight: '700',
-  },
-  bestHint: {
-    color: Palette.textMuted,
-    fontSize: 12,
   },
   startBtn: {
     marginTop: 4,

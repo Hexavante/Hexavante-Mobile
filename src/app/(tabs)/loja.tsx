@@ -33,7 +33,7 @@ export default function LojaScreen() {
 
   const buy = (item: ShopItem) => {
     if (!token) return;
-    Alert.alert('Comprar item', `Comprar "${item.name}" por ${item.price} moedas?`, [
+    Alert.alert('Comprar item', `Comprar "${item.name}" por ${item.cost} moedas?`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Comprar',
@@ -93,13 +93,13 @@ export default function LojaScreen() {
               {item.name}
             </Text>
             <Text style={styles.itemDesc} numberOfLines={2}>
-              {item.description ?? item.type}
+              {item.description ?? item.category}
             </Text>
             <Button
               size="sm"
               variant="secondary"
-              label={String(item.price)}
-              disabled={coins < item.price}
+              label={String(item.cost)}
+              disabled={coins < item.cost}
               onPress={() => buy(item)}
               style={styles.buyBtn}
             >

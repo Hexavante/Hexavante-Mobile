@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Backpack, ChevronRight, LogOut, Medal } from 'lucide-react-native';
+import { Award, Backpack, Bell, ChevronRight, LogOut, Medal, Settings } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
@@ -48,7 +48,7 @@ export default function PerfilScreen() {
 
       <View style={styles.menu}>
         <Pressable
-          onPress={() => router.navigate('/loja' as never)}
+          onPress={() => router.navigate('/inventario' as never)}
           style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
         >
           <View style={styles.menuIcon}>
@@ -65,6 +65,36 @@ export default function PerfilScreen() {
             <Medal size={18} color={Palette.amber} />
           </View>
           <Text style={styles.menuLabel}>Ranking</Text>
+          <ChevronRight size={16} color={Palette.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/certificados' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(252,211,77,0.1)' }]}>
+            <Award size={18} color={Palette.gold} />
+          </View>
+          <Text style={styles.menuLabel}>Certificados</Text>
+          <ChevronRight size={16} color={Palette.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/notificacoes' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(167,139,250,0.1)' }]}>
+            <Bell size={18} color={Palette.violet} />
+          </View>
+          <Text style={styles.menuLabel}>Notificações</Text>
+          <ChevronRight size={16} color={Palette.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/configuracoes' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(248,250,252,0.08)' }]}>
+            <Settings size={18} color={Palette.textMuted} />
+          </View>
+          <Text style={styles.menuLabel}>Configurações</Text>
           <ChevronRight size={16} color={Palette.textSubtle} />
         </Pressable>
         <Pressable

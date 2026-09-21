@@ -31,6 +31,7 @@ export type Lesson = {
   id: string;
   title: string;
   durationMinutes: number | null;
+  videoUrl?: string | null;
   isCompleted?: boolean;
   isFavorite?: boolean;
 };
@@ -50,13 +51,30 @@ export type Exam = {
   title: string;
   slug: string;
   description: string | null;
-  subject: string;
-  durationMinutes: number;
+  examType: string;
   questionCount: number;
-  difficulty: string | null;
-  status?: string;
-  bestScore?: number | null;
-  attemptsCount?: number;
+  timeLimit: number;
+  isPremiumOnly: boolean;
+  userAttemptCount: number;
+  coverImage?: string | null;
+};
+
+export type ExamStats = {
+  totalAttempts: number;
+  averageScore: number;
+  bestScore: number;
+};
+
+export type ExamHistoryEntry = {
+  id: string;
+  examId: string;
+  examTitle: string;
+  examSlug: string;
+  examType: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  finishedAt: string;
 };
 
 export type RankingEntry = {
@@ -77,31 +95,101 @@ export type Ranking = {
 
 export type ShopItem = {
   id: string;
+  slug: string;
   name: string;
   description: string | null;
-  type: string;
-  price: number;
-  icon?: string;
-  available?: boolean;
+  cost: number;
+  category: string;
+  imageUrl: string | null;
+  isPremiumOnly: boolean;
+  isPermanent: boolean;
+  ownershipStatus: 'available' | 'owned_permanent' | 'active_temporary' | 'expired_temporary';
+  inventoryId?: string | null;
+  isEquipped?: boolean;
+  expiresAt?: string | null;
 };
 
 export type ShopState = {
-  coins: number;
   items: ShopItem[];
+  inventory: InventoryEntry[];
+  coins: number;
+  premium: boolean;
+  premiumExpiresAt: string | null;
 };
 
-export type InventoryItem = {
+export type InventoryEntry = {
   id: string;
-  name: string;
-  description: string | null;
-  type: string;
-  equipped?: boolean;
-  quantity: number;
+  storeItemId: string;
+  isEquipped: boolean;
+  purchasedAt: string;
+  expiresAt: string | null;
+  item: ShopItem;
 };
 
-export type NotificationsState = {
-  notifications: unknown[];
-  unreadCount: number;
+export type Certificate = {
+  id: string;
+  code: string;
+  issuedAt: string;
+  course: {
+    title: string;
+    categoryName: string;
+  };
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    username: string;
+  };
+};
+
+export type Notification = {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type Tutorial = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  thumbnailUrl: string | null;
+  videoUrl: string | null;
+  duration: number | null;
+  viewCount: number;
+  categoryId: string | null;
+  categoryName: string | null;
+  authorName: string;
+  authorUsername: string;
+  authorAvatarUrl: string | null;
+  tags: string[];
+  createdAt: string;
+};
+
+export type UserProfile = {
+  id: string;
+  username: string;
+  fullName: string;
+  email: string;
+  avatarUrl: string | null;
+  birthDate: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  bio: string | null;
+  profileVisibility: string;
+  isVerified: boolean;
+  isPremium: boolean;
+  coins: number;
+  twoFactorEnabled: boolean;
+  presence: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Pagination = {

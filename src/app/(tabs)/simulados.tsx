@@ -22,7 +22,7 @@ export default function SimuladosScreen() {
     if (!token) return;
     examsApi(token)
       .list()
-      .then((data) => setExams(data))
+      .then((res) => setExams(res.data))
       .catch(() => setError(true));
   }, [token]);
 
@@ -69,7 +69,7 @@ export default function SimuladosScreen() {
                   <FileCheck size={20} color={Palette.violet} />
                 </View>
                 <View style={styles.subjectChip}>
-                  <Text style={styles.subjectText}>{item.subject}</Text>
+                  <Text style={styles.subjectText}>{item.examType}</Text>
                 </View>
               </View>
               <Text style={styles.cardTitle}>{item.title}</Text>
@@ -85,11 +85,8 @@ export default function SimuladosScreen() {
                 </View>
                 <View style={styles.metaItem}>
                   <Clock size={12} color={Palette.textSubtle} />
-                  <Text style={styles.metaText}>{item.durationMinutes} min</Text>
+                  <Text style={styles.metaText}>{item.timeLimit} min</Text>
                 </View>
-                {item.difficulty ? (
-                  <Text style={[styles.metaText, { color: Palette.amber }]}>{item.difficulty}</Text>
-                ) : null}
               </View>
             </Card>
           </Pressable>
