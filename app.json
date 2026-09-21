@@ -39,6 +39,13 @@
       ],
       "expo-secure-store"
     ],
+    "extra": {
+      "apiUrl": process.env.API_URL || "https://api.hexavante.com.br",
+      "appUrl": process.env.APP_URL || "https://hexavante.com.br",
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

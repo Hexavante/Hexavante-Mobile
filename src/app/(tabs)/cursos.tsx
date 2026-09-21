@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { FlatList, Pressable, Text, View, StyleSheet } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BookOpen, Clock, Layers } from 'lucide-react-native';
+import { BookOpen, Clock, Layers, Search } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { coursesApi } from '@/lib/features';
@@ -17,6 +17,7 @@ export default function CursosScreen() {
   const router = useRouter();
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [error, setError] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -25,6 +26,13 @@ export default function CursosScreen() {
       .then((res) => setCourses(res.data))
       .catch(() => setError(true));
   }, [token]);
+
+  const filtered = useMemo(() => {
+    if (!courses) return null;
+    if (!search.trim()) return courses;
+    const q = search.trim().toLowerCase();
+    return courses.filter((c) => c.title.toLowerCase().includes(q));
+  }, [courses, search]);
 
   if (error) {
     return (
@@ -46,16 +54,33 @@ export default function CursosScreen() {
         <Text style={styles.title}>Cursos</Text>
         <Text style={styles.subtitle}>{courses.length} disponíveis</Text>
       </View>
+      <View style={styles.searchContainer}>
+        <Search size={18} color={Palette.textSubtle} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar cursos..."
+          placeholderTextColor={Palette.textSubtle}
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+      </View>
       <FlatList
-        data={courses}
+        data={filtered}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
         ListEmptyComponent={
           <EmptyState
             icon={BookOpen}
-            title="Nenhum curso disponível"
-            description="Novos cursos serão adicionados em breve."
+            title="Nenhum curso encontrado"
+            description={
+              search.trim()
+                ? 'Tente outro termo de busca.'
+                : 'Novos cursos serão adicionados em breve.'
+            }
           />
         }
         renderItem={({ item }) => (
@@ -118,6 +143,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Palette.textMuted,
     marginTop: 2,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: Palette.surface,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Palette.border,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    color: Palette.text,
+    fontSize: 14,
+    paddingVertical: 0,
   },
   card: {
     flexDirection: 'row',

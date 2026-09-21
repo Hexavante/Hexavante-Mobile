@@ -5,7 +5,9 @@ import type {
   CourseDetail,
   Exam,
   ExamHistoryEntry,
+  ExamStartResponse,
   ExamStats,
+  ExamSubmitResponse,
   InventoryEntry,
   Notification,
   Pagination,
@@ -33,6 +35,9 @@ export function examsApi(token: string) {
     stats: () => api<ExamStats>('/api/v1/exams/stats', { token }),
     evolution: () => api<{ date: string; score: number }[]>('/api/v1/exams/evolution', { token }),
     subjectStats: () => api<{ subject: string; correct: number; total: number }[]>('/api/v1/exams/subject-stats', { token }),
+    start: (id: string) => api<ExamStartResponse>(`/api/v1/exams/${id}/start`, { method: 'POST', token }),
+    submit: (attemptId: string, answers: { questionId: string; alternativeId?: string }[]) =>
+      api<ExamSubmitResponse>('/api/v1/exams/submit', { method: 'POST', body: { attemptId, answers }, token }),
   };
 }
 

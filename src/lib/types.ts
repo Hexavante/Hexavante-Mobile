@@ -65,6 +65,37 @@ export type ExamStats = {
   bestScore: number;
 };
 
+export type ExamQuestionItem = {
+  id: string;
+  statement: string;
+  imageUrl: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  orderNumber: number;
+  points: number;
+  type: string;
+  subject: string | null;
+  alternatives: { id: string; text: string }[];
+};
+
+export type ExamStartResponse = {
+  attemptId: string;
+  examId: string;
+  title: string;
+  timeLimit: number | null;
+  startedAt: string;
+  questions: ExamQuestionItem[];
+};
+
+export type ExamSubmitResponse = {
+  attemptId: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  percentage: number;
+  finishedAt: string;
+};
+
 export type ExamHistoryEntry = {
   id: string;
   examId: string;

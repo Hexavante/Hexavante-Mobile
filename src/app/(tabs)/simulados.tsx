@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { FlatList, Pressable, Text, View, StyleSheet } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Clock, FileCheck, Layers } from 'lucide-react-native';
+import { Clock, FileCheck, Layers, Search } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { examsApi } from '@/lib/features';
@@ -17,6 +17,7 @@ export default function SimuladosScreen() {
   const router = useRouter();
   const [exams, setExams] = useState<Exam[] | null>(null);
   const [error, setError] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -25,6 +26,13 @@ export default function SimuladosScreen() {
       .then((res) => setExams(res.data))
       .catch(() => setError(true));
   }, [token]);
+
+  const filtered = useMemo(() => {
+    if (!exams) return null;
+    if (!search.trim()) return exams;
+    const q = search.trim().toLowerCase();
+    return exams.filter((e) => e.title.toLowerCase().includes(q));
+  }, [exams, search]);
 
   if (error) {
     return (
@@ -46,16 +54,33 @@ export default function SimuladosScreen() {
         <Text style={styles.title}>Simulados</Text>
         <Text style={styles.subtitle}>Teste seus conhecimentos</Text>
       </View>
+      <View style={styles.searchContainer}>
+        <Search size={18} color={Palette.textSubtle} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar simulados..."
+          placeholderTextColor={Palette.textSubtle}
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+      </View>
       <FlatList
-        data={exams}
+        data={filtered}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
         ListEmptyComponent={
           <EmptyState
             icon={FileCheck}
-            title="Nenhum simulado disponível"
-            description="Novos simulados serão adicionados em breve."
+            title="Nenhum simulado encontrado"
+            description={
+              search.trim()
+                ? 'Tente outro termo de busca.'
+                : 'Novos simulados serão adicionados em breve.'
+            }
           />
         }
         renderItem={({ item }) => (
@@ -111,6 +136,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Palette.textMuted,
     marginTop: 2,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: Palette.surface,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Palette.border,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    color: Palette.text,
+    fontSize: 14,
+    paddingVertical: 0,
   },
   card: {
     gap: 8,

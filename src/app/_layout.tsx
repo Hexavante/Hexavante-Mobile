@@ -1,9 +1,16 @@
+import { useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { DarkTheme, ThemeProvider } from 'expo-router';
+import * as Linking from 'expo-linking';
+import type { Notification } from 'expo-notifications';
 
 import { AuthProvider } from '@/lib/auth-context';
 import { Palette } from '@/constants/theme';
+import {
+  registerForPushNotifications,
+  addNotificationListener,
+} from '@/lib/notifications';
 
 const navTheme = {
   ...DarkTheme,
@@ -18,6 +25,32 @@ const navTheme = {
 };
 
 export default function RootLayout() {
+  const notificationListener = useRef<ReturnType<typeof addNotificationListener> | null>(null);
+
+  useEffect(() => {
+    registerForPushNotifications().then((token) => {
+      if (token) {
+        // TODO: send token to backend POST /api/v1/notifications/register
+      }
+    });
+
+    notificationListener.current = addNotificationListener({
+      onReceive: (notification: Notification) => {
+        // handle foreground notification (e.g. in-app banner)
+      },
+      onTap: (response) => {
+        const data = response.notification.request.content.data;
+        if (data?.url) {
+          Linking.openURL(data.url as string);
+        }
+      },
+    });
+
+    return () => {
+      notificationListener.current?.();
+    };
+  }, []);
+
   return (
     <ThemeProvider value={navTheme}>
       <AuthProvider>

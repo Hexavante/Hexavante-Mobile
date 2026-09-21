@@ -1,7 +1,9 @@
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
-export const API_BASE_URL = 'https://api.hexavante.com.br';
-export const APP_URL = 'https://hexavante.com.br';
+const extra = Constants.expoConfig?.extra ?? {};
+export const API_BASE_URL = extra.apiUrl || 'https://api.hexavante.com.br';
+export const APP_URL = extra.appUrl || 'https://hexavante.com.br';
 
 const TOKEN_KEY = 'hexavante_access_token';
 
