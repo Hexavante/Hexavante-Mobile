@@ -1,36 +1,41 @@
 import { Platform } from 'react-native';
-import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import type * as Notifications from 'expo-notifications';
 
 type NotificationsModule = typeof Notifications;
 
-// expo-notifications foi removido do Expo Go (SDK 53+).
-// Import estático quebraria o app inteiro — por isso o carregamento é lazy
-// e todas as funções viram no-op quando o módulo nativo não existe
-// (Expo Go) ou quando não há projectId configurado (dev build).
-function loadModule(): Promise<NotificationsModule | null> {
-  try {
-    const mod = require('expo-notifications') as NotificationsModule;
-    mod.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
-    return Promise.resolve(mod);
-  } catch {
-    return Promise.resolve(null);
-  }
+// expo-notifications (push remoto) foi removido do Expo Go desde SDK 53.
+// require() dispara a inicialização nativa e lança erro ANTES do try/catch
+// pegar — por isso verificamos executionEnvironment antes de importar.
+function isExpoGo(): boolean {
+  return Constants?.executionEnvironment === 'storeClient';
 }
 
-let cached: Promise<NotificationsModule | null> | null = null;
+let modPromise: Promise<NotificationsModule | null> | null = null;
+
 function getModule(): Promise<NotificationsModule | null> {
-  if (!cached) cached = loadModule();
-  return cached;
+  if (!modPromise) {
+    if (isExpoGo()) {
+      modPromise = Promise.resolve(null);
+    } else {
+      try {
+        const mod = require('expo-notifications') as NotificationsModule;
+        mod.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
+          }),
+        });
+        modPromise = Promise.resolve(mod);
+      } catch {
+        modPromise = Promise.resolve(null);
+      }
+    }
+  }
+  return modPromise;
 }
 
 export async function registerForPushNotifications(): Promise<string | null> {
@@ -92,3 +97,6 @@ export function addNotificationListener(handlers: {
     cleanup?.();
   };
 }
+
+// re-export Device so _layout.tsx não precisa de outro import
+import * as Device from 'expo-device';

@@ -33,8 +33,8 @@ module.exports = {
       'expo-splash-screen',
       {
         backgroundColor: '#06080f',
-        image: './assets/images/splash-icon.png',
-        imageWidth: 76,
+        image: './assets/images/hexavante-logo.png',
+        imageWidth: 160,
       },
     ],
     'expo-secure-store',

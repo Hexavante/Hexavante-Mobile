@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 
 import { useAuth } from '@/lib/auth-context';
@@ -39,9 +39,11 @@ export default function LoginScreen() {
         style={styles.inner}
       >
         <View style={styles.brandBox}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logo}>H</Text>
-          </View>
+          <Image
+            source={require('@/assets/images/hexavante-logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>HEXAVANTE</Text>
           <Text style={styles.subtitle}>Plataforma de estudos</Text>
         </View>
@@ -101,21 +103,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  logoBox: {
-    width: 64,
-    height: 64,
-    borderRadius: Radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Palette.highlightSoft,
-    borderWidth: 1,
-    borderColor: Palette.highlightBorder,
-    marginBottom: 8,
-  },
   logo: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: Palette.highlight,
+    width: 120,
+    height: 120,
+    marginBottom: 8,
   },
   title: {
     fontSize: 26,
