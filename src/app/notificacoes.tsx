@@ -107,12 +107,16 @@ export default function NotificacoesScreen() {
 
   const handlePress = useCallback(
     (item: Notification) => {
-      if (!item.readAt) handleMarkRead(item.id);
+      if (!item.readAt) void handleMarkRead(item.id);
       if (item.link) {
-        // TODO: navigate to link
+        try {
+          router.push(item.link as never);
+        } catch {
+          // deep-link inválido — ignora
+        }
       }
     },
-    [handleMarkRead],
+    [handleMarkRead, router],
   );
 
   const renderItem = useCallback(

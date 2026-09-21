@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Text, View, StyleSheet } from 'react-native';
+import { FlatList, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Award, ArrowLeft, Calendar, Hash, Tag } from 'lucide-react-native';
 
@@ -102,9 +102,9 @@ function Header({ onBack }: { onBack: () => void }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <View style={styles.backBtn} onTouchEnd={onBack}>
+        <Pressable onPress={onBack} style={styles.backBtn}>
           <ArrowLeft size={20} color={Palette.text} />
-        </View>
+        </Pressable>
         <Text style={styles.title}>Certificados</Text>
       </View>
       <Text style={styles.subtitle}>Seus certificados conquistados</Text>

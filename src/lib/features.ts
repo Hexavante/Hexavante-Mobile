@@ -1,5 +1,6 @@
 import { api } from '@/lib/api';
 import type {
+  Achievement,
   Certificate,
   Course,
   CourseDetail,
@@ -9,6 +10,7 @@ import type {
   ExamStats,
   ExamSubmitResponse,
   InventoryEntry,
+  LessonDetail,
   Notification,
   Pagination,
   Ranking,
@@ -24,6 +26,10 @@ export function coursesApi(token: string) {
     detail: (id: string) => api<{ course: CourseDetail }>(`/api/v1/courses/${id}`, { token }),
     enroll: (id: string) => api<{ success: boolean }>(`/api/v1/courses/${id}/enroll`, { method: 'POST', token }),
     progress: (id: string) => api<{ progress: unknown }>(`/api/v1/courses/${id}/progress`, { token }),
+    lesson: (courseId: string, lessonId: string) =>
+      api<{ lesson: LessonDetail }>(`/api/v1/courses/${courseId}/lessons/${lessonId}`, { token }),
+    completeLesson: (courseId: string, lessonId: string) =>
+      api<{ success: boolean }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/complete`, { method: 'POST', token }),
   };
 }
 
@@ -41,10 +47,24 @@ export function examsApi(token: string) {
   };
 }
 
+export type MyRank = {
+  rank?: number;
+  totalXp?: number;
+  level?: number;
+  username?: string;
+  league?: string;
+};
+
 export function gamificationApi(token: string) {
   return {
     xpProfile: () => api<XpProfile>('/api/v1/users/me/xp-profile', { token }),
-    ranking: () => api<Ranking>('/api/v1/rankings', { token }),
+    ranking: () =>
+      api<{ data: Ranking['data']; pagination: Pagination; season?: unknown }>(
+        '/api/v1/rankings',
+        { token },
+      ),
+    me: () => api<MyRank | null>('/api/v1/rankings/me', { token }),
+    achievements: () => api<{ achievements: Achievement[] }>('/api/v1/users/me/achievements', { token }),
   };
 }
 

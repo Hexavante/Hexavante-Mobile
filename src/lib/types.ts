@@ -113,6 +113,7 @@ export type RankingEntry = {
   userId: string;
   username: string;
   name: string | null;
+  fullName?: string | null;
   avatarUrl: string | null;
   league: string;
   totalXp: number;
@@ -228,4 +229,32 @@ export type Pagination = {
   limit: number;
   total: number;
   totalPages: number;
+};
+
+export type Achievement = {
+  key: string;
+  title?: string | null;
+  description?: string | null;
+  icon?: string | null;
+  tier?: string | null;
+  unlocked: boolean;
+  unlockedAt?: string | null;
+};
+
+export type LessonDetail = {
+  id: string;
+  title: string;
+  description?: string | null;
+  videoUrl?: string | null;
+  content?: string | null;
+  duration?: number | null;
+  orderNumber?: number | null;
+};
+
+export type VerifiedCertificate = {
+  title: string;
+  userName?: string | null;
+  fullName?: string | null;
+  issuedAt?: string | null;
+  code?: string | null;
 };

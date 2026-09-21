@@ -29,6 +29,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Palette, Radius, Spacing, shadow } from '@/constants/theme';
 
+function toISODate(br: string): string | null {
+  const m = br.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+  const d = Number(dd);
+  const mo = Number(mm);
+  const y = Number(yyyy);
+  if (d < 1 || d > 31 || mo < 1 || mo > 12 || y < 1900 || y > new Date().getFullYear()) return null;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function fromISODate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  const [, yyyy, mm, dd] = m;
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 export default function ConfiguracoesScreen() {
   const { signOut } = useAuth();
   const token = useToken();
@@ -49,7 +68,7 @@ export default function ConfiguracoesScreen() {
         setProfile(user);
         setFullName(user.fullName);
         setUsername(user.username);
-        setBirthDate(user.birthDate ?? '');
+        setBirthDate(fromISODate(user.birthDate));
       })
       .catch(() => {
         Alert.alert('Erro', 'Não foi possível carregar seu perfil.');
@@ -69,13 +88,24 @@ export default function ConfiguracoesScreen() {
       return;
     }
 
+    let isoBirthDate: string | undefined;
+    if (birthDate.trim()) {
+      const iso = toISODate(birthDate);
+      if (!iso) {
+        Alert.alert('Erro', 'Data de nascimento inválida. Use DD/MM/AAAA.');
+        return;
+      }
+      isoBirthDate = iso;
+    }
+
     setSaving(true);
     try {
       const { user } = await usersApi(token).update({
         fullName: fullName.trim(),
         username: username.trim(),
-        birthDate: birthDate.trim() || undefined,
+        birthDate: isoBirthDate,
       });
+      setBirthDate(fromISODate(user.birthDate));
       setProfile(user);
       Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
     } catch (err: unknown) {
@@ -157,7 +187,7 @@ export default function ConfiguracoesScreen() {
             label="Data de nascimento"
             value={birthDate}
             onChangeText={setBirthDate}
-            placeholder="AAAA-MM-DD"
+            placeholder="DD/MM/AAAA"
             autoCapitalize="none"
             keyboardType="numbers-and-punctuation"
           />
@@ -210,7 +240,7 @@ export default function ConfiguracoesScreen() {
       <Card style={styles.section}>
         <View style={styles.sectionHeader}>
           <Calendar size={16} color={Palette.violet} />
-          <Text style={styles.sectionTitle}>Conta</Text>
+          <Text style={styles.sectionTitle}>Plano e moedas</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Moedas</Text>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
+import { FlatList, Image, Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BookOpen, Clock, Layers, Search } from 'lucide-react-native';
 
@@ -89,7 +89,9 @@ export default function CursosScreen() {
             style={({ pressed }) => [pressed && { opacity: 0.85 }]}
           >
             <Card style={styles.card}>
-              {item.thumbnailUrl ? null : (
+              {item.thumbnailUrl ? (
+                <Image source={{ uri: item.thumbnailUrl }} style={styles.thumb} />
+              ) : (
                 <View style={styles.thumb}>
                   <BookOpen size={28} color={Palette.highlight} />
                 </View>

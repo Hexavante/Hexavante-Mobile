@@ -69,7 +69,12 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="ranking" />
           <Stack.Screen name="curso/[id]" />
+          <Stack.Screen name="aula/[courseId]/[lessonId]" />
           <Stack.Screen name="exame/[id]" />
+          <Stack.Screen name="historico" />
+          <Stack.Screen name="estatisticas" />
+          <Stack.Screen name="conquistas" />
+          <Stack.Screen name="verificar" />
           <Stack.Screen name="configuracoes" />
           <Stack.Screen name="inventario" />
           <Stack.Screen name="certificados" />

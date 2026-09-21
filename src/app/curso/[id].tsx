@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Pressable, Text, View, StyleSheet, ScrollView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { BookOpen, CheckCircle2, ChevronRight, Layers, Play } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, Text, View, StyleSheet, ScrollView } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { BookOpen, CheckCircle2, Layers, Play } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { coursesApi } from '@/lib/features';
@@ -15,6 +15,7 @@ import { Palette, Radius, shadow } from '@/constants/theme';
 
 export default function CursoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const token = useToken();
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [enrolling, setEnrolling] = useState(false);
@@ -28,14 +29,36 @@ export default function CursoDetailScreen() {
       .catch(() => setError(true));
   }, [token, id]);
 
+  const scrollRef = useRef<ScrollView>(null);
+
   const enroll = () => {
     if (!token || !id) return;
     setEnrolling(true);
     coursesApi(token)
       .enroll(id)
-      .then(() => setCourse((c) => (c ? { ...c, enrolled: true } : c)))
-      .catch(() => undefined)
+      .then(() =>
+        setCourse((c) =>
+          c
+            ? {
+                ...c,
+                progress: c.progress ?? {
+                  percent: 0,
+                  completedLessons: 0,
+                  totalLessons: c.totalLessons,
+                },
+              }
+            : c,
+        ),
+      )
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'Não foi possível concluir a matrícula.';
+        Alert.alert('Erro', message);
+      })
       .finally(() => setEnrolling(false));
+  };
+
+  const scrollToLessons = () => {
+    scrollRef.current?.scrollToEnd({ animated: true });
   };
 
   if (error) {
@@ -54,7 +77,7 @@ export default function CursoDetailScreen() {
 
   return (
     <Screen contentContainerStyle={{ padding: 0, paddingBottom: 32 }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>{course.title}</Text>
           {course.instructorName ? (
@@ -80,12 +103,16 @@ export default function CursoDetailScreen() {
               {course.description || course.shortDescription}
             </Text>
           ) : null}
-          <Button
-            label={course.progress ? 'Continuar curso' : 'Matricular-se'}
-            loading={enrolling}
-            onPress={enroll}
-            style={styles.enrollBtn}
-          />
+          {course.progress ? (
+            <Button label="Ver aulas" onPress={scrollToLessons} style={styles.enrollBtn} />
+          ) : (
+            <Button
+              label="Matricular-se"
+              loading={enrolling}
+              onPress={enroll}
+              style={styles.enrollBtn}
+            />
+          )}
         </View>
 
         <View style={styles.sections}>
@@ -95,21 +122,28 @@ export default function CursoDetailScreen() {
               <Text style={styles.moduleTitle}>{module.title}</Text>
               <View style={styles.lessonList}>
                 {module.lessons.map((lesson) => (
-                  <View key={lesson.id} style={styles.lessonRow}>
-                    {lesson.isCompleted ? (
-                      <CheckCircle2 size={16} color={Palette.emerald} />
-                    ) : (
-                      <View style={styles.playIcon}>
-                        <Play size={12} color={Palette.highlight} />
-                      </View>
-                    )}
-                    <Text style={styles.lessonTitle} numberOfLines={1}>
-                      {lesson.title}
-                    </Text>
-                    {lesson.durationMinutes ? (
-                      <Text style={styles.lessonDuration}>{lesson.durationMinutes} min</Text>
-                    ) : null}
-                  </View>
+                  <Pressable
+                    key={lesson.id}
+                    disabled={!course.progress}
+                    onPress={() => router.push(`/aula/${id}/${lesson.id}` as never)}
+                    style={({ pressed }) => [pressed && course.progress && { opacity: 0.7 }]}
+                  >
+                    <View style={styles.lessonRow}>
+                      {lesson.isCompleted ? (
+                        <CheckCircle2 size={16} color={Palette.emerald} />
+                      ) : (
+                        <View style={styles.playIcon}>
+                          <Play size={12} color={Palette.highlight} />
+                        </View>
+                      )}
+                      <Text style={styles.lessonTitle} numberOfLines={1}>
+                        {lesson.title}
+                      </Text>
+                      {lesson.durationMinutes ? (
+                        <Text style={styles.lessonDuration}>{lesson.durationMinutes} min</Text>
+                      ) : null}
+                    </View>
+                  </Pressable>
                 ))}
               </View>
             </Card>

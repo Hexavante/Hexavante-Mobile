@@ -4,7 +4,8 @@ import { Medal, TrendingUp } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
-import { gamificationApi } from '@/lib/features';
+import { api } from '@/lib/api';
+import { gamificationApi, type MyRank } from '@/lib/features';
 import type { RankingEntry } from '@/lib/types';
 import { Screen } from '@/components/ui/screen';
 import { Loading } from '@/components/ui/loading';
@@ -21,7 +22,7 @@ export default function RankingScreen() {
   const token = useToken();
   const { user } = useAuth();
   const [entries, setEntries] = useState<RankingEntry[] | null>(null);
-  const [myRank, setMyRank] = useState<RankingEntry | null>(null);
+  const [myRank, setMyRank] = useState<MyRank | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -30,9 +31,11 @@ export default function RankingScreen() {
       .ranking()
       .then((ranking) => {
         setEntries(ranking.data ?? []);
-        setMyRank(ranking.me ?? null);
       })
       .catch(() => setError(true));
+    api<MyRank | null>('/api/v1/rankings/me', { token })
+      .then((me) => setMyRank(me ?? null))
+      .catch(() => setMyRank(null));
   }, [token]);
 
   if (error) {
@@ -56,10 +59,12 @@ export default function RankingScreen() {
         <Text style={styles.subtitle}>Os melhores da plataforma</Text>
       </View>
 
-      {myRank ? (
+      {myRank?.rank != null ? (
         <View style={styles.meCard}>
           <Text style={styles.meText}>
-            Sua posição: #{myRank.rank} · {myRank.totalXp} XP · {myRank.league}
+            Sua posição: #{myRank.rank}
+            {myRank.totalXp != null ? ` · ${myRank.totalXp} XP` : ''}
+            {myRank.league ? ` · ${myRank.league}` : ''}
           </Text>
         </View>
       ) : null}
@@ -82,10 +87,12 @@ export default function RankingScreen() {
               </View>
               <View style={styles.userBox}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{item.name?.charAt(0) ?? item.username?.charAt(0) ?? '?'}</Text>
+                  <Text style={styles.avatarText}>
+                    {(item.fullName ?? item.name ?? item.username)?.charAt(0) ?? '?'}
+                  </Text>
                 </View>
                 <Text style={styles.username} numberOfLines={1}>
-                  {item.name ?? item.username}
+                  {item.fullName ?? item.username}
                 </Text>
               </View>
               <Text style={styles.xp}>{item.totalXp} XP</Text>

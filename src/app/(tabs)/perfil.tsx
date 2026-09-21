@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Award, Backpack, Bell, ChevronRight, LogOut, Medal, Settings } from 'lucide-react-native';
+import { Award, Backpack, BarChart3, Bell, ChevronRight, History, LogOut, Medal, Settings, ShieldCheck, Trophy } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
@@ -58,7 +58,7 @@ export default function PerfilScreen() {
           <ChevronRight size={16} color={Palette.textSubtle} />
         </Pressable>
         <Pressable
-          onPress={() => router.navigate('/simulados' as never)}
+          onPress={() => router.navigate('/ranking' as never)}
           style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
         >
           <View style={styles.menuIcon}>
@@ -75,6 +75,46 @@ export default function PerfilScreen() {
             <Award size={18} color={Palette.gold} />
           </View>
           <Text style={styles.menuLabel}>Certificados</Text>
+          <ChevronRight size={16} color={Palette.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/conquistas' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(251,191,36,0.1)' }]}>
+            <Trophy size={18} color={Palette.amber} />
+          </View>
+          <Text style={styles.menuLabel}>Conquistas</Text>
+          <ChevronRight size={16} color={Palette.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/historico' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(52,211,153,0.1)' }]}>
+            <History size={18} color={Palette.emerald} />
+          </View>
+          <Text style={styles.menuLabel}>Histórico de simulados</Text>
+          <ChevronRight size={16} color={Palette.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/estatisticas' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(56,189,248,0.1)' }]}>
+            <BarChart3 size={18} color={Palette.sky} />
+          </View>
+          <Text style={styles.menuLabel}>Estatísticas</Text>
+          <ChevronRight size={16} color={Palette.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/verificar' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(52,211,153,0.1)' }]}>
+            <ShieldCheck size={18} color={Palette.emerald} />
+          </View>
+          <Text style={styles.menuLabel}>Verificar certificado</Text>
           <ChevronRight size={16} color={Palette.textSubtle} />
         </Pressable>
         <Pressable
