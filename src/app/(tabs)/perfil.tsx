@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Award, Backpack, BarChart3, Bell, ChevronRight, Flame, History, LogOut, Medal, Settings, ShieldCheck, Star, Trophy, Zap } from 'lucide-react-native';
+import { Award, Backpack, BarChart3, Bell, CalendarDays, ChevronRight, Flame, GraduationCap, History, LogOut, Medal, Radio, Settings, ShieldCheck, Star, Trophy, Zap } from 'lucide-react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { useToken } from '@/hooks/use-token';
