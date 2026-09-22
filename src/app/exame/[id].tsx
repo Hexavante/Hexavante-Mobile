@@ -15,9 +15,11 @@ import {
   CheckCircle,
   Circle,
   Clock,
+  Coins,
   FileCheck,
   Layers,
   Trophy,
+  Zap,
 } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
@@ -58,6 +60,8 @@ type Result = {
   totalQuestions: number;
   percentage: number;
   finishedAt: string;
+  xpAwarded?: number;
+  coinsAwarded?: number;
 };
 
 type ExamInfo = {
@@ -243,6 +247,22 @@ export default function ExameDetailScreen() {
 
         <Card style={styles.resultsCard}>
           <Text style={styles.percentage}>{result.percentage.toFixed(1)}%</Text>
+          {(result.xpAwarded ?? 0) > 0 || (result.coinsAwarded ?? 0) > 0 ? (
+            <View style={styles.earnRow}>
+              {(result.xpAwarded ?? 0) > 0 ? (
+                <View style={styles.earnItem}>
+                  <Zap size={14} color={P.amber} />
+                  <Text style={styles.earnText}>+{result.xpAwarded} XP</Text>
+                </View>
+              ) : null}
+              {(result.coinsAwarded ?? 0) > 0 ? (
+                <View style={styles.earnItem}>
+                  <Coins size={14} color={P.gold} />
+                  <Text style={styles.earnText}>+{result.coinsAwarded} moedas</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
           <Text style={styles.scoreLabel}>Pontuação: {result.score.toFixed(1)}</Text>
 
           <View style={styles.resultsRow}>
@@ -631,6 +651,22 @@ function makeStyles(P: AppPalette) {
     fontSize: 40,
     fontWeight: '900',
     color: P.highlight,
+  },
+  earnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  earnItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  earnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: P.text,
   },
   scoreLabel: {
     fontSize: 14,

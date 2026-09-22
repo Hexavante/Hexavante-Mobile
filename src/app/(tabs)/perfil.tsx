@@ -194,6 +194,26 @@ export default function PerfilScreen() {
           <ChevronRight size={16} color={P.textSubtle} />
         </Pressable>
         <Pressable
+          onPress={() => router.navigate('/ao-vivo' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(248,113,113,0.1)' }]}>
+            <Radio size={18} color="#f87171" />
+          </View>
+          <Text style={styles.menuLabel}>Ao vivo</Text>
+          <ChevronRight size={16} color={P.textSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.navigate('/instrutor' as never)}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: 'rgba(56,189,248,0.1)' }]}>
+            <GraduationCap size={18} color={P.sky} />
+          </View>
+          <Text style={styles.menuLabel}>Seja instrutor</Text>
+          <ChevronRight size={16} color={P.textSubtle} />
+        </Pressable>
+        <Pressable
           onPress={() => router.navigate('/notificacoes' as never)}
           style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
         >

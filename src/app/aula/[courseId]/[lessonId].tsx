@@ -92,9 +92,15 @@ export default function AulaPlayerScreen() {
     setCompleting(true);
     coursesApi(token)
       .completeLesson(String(courseId), String(lessonId))
-      .then(() => {
+      .then((res) => {
         void success();
-        Alert.alert('Aula concluída', 'Progresso salvo com sucesso!', [
+        const xp = res?.xpAwarded ?? 0;
+        const coins = res?.coinsAwarded ?? 0;
+        const parts: string[] = [];
+        if (xp > 0) parts.push(`+${xp} XP`);
+        if (coins > 0) parts.push(`+${coins} moedas`);
+        const message = parts.length > 0 ? parts.join(' · ') : 'Progresso salvo com sucesso!';
+        Alert.alert('Aula concluída!', message, [
           { text: 'OK', onPress: () => router.back() },
         ]);
       })

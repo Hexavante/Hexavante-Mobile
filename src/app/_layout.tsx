@@ -59,6 +59,8 @@ function ThemedApp() {
           <Stack.Screen name="notificacoes" />
           <Stack.Screen name="tutorial" />
           <Stack.Screen name="tutoriais" />
+          <Stack.Screen name="ao-vivo" />
+          <Stack.Screen name="instrutor" />
         </Stack>
       </AuthProvider>
     </ThemeProvider>

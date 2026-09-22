@@ -9,8 +9,13 @@ import type {
   ExamStartResponse,
   ExamStats,
   ExamSubmitResponse,
+  InstructorCourse,
+  InstructorStatus,
   InventoryEntry,
   LessonDetail,
+  LiveMessage,
+  LiveRoom,
+  LiveRoomDetail,
   Notification,
   Pagination,
   Ranking,
@@ -31,7 +36,7 @@ export function coursesApi(token: string) {
     toggleFavorite: (courseId: string, lessonId: string) =>
       api<{ isFavorite: boolean }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/favorite`, { method: 'POST', token }),
     completeLesson: (courseId: string, lessonId: string) =>
-      api<{ success: boolean }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/complete`, { method: 'POST', token }),
+      api<{ success: boolean; xpAwarded?: number; coinsAwarded?: number }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/complete`, { method: 'POST', token }),
     saveNote: (courseId: string, lessonId: string, content: string) =>
       api<{ success: boolean; note?: string | null }>(`/api/v1/courses/${courseId}/lessons/${lessonId}/note`, { method: 'PUT', body: { content }, token }),
   };
@@ -125,5 +130,35 @@ export function usersApi(token: string) {
     me: () => api<{ user: UserProfile }>('/api/v1/users/me', { token }),
     update: (data: { fullName?: string; username?: string; birthDate?: string }) =>
       api<{ user: UserProfile }>('/api/v1/users/me', { method: 'PATCH', body: data, token }),
+  };
+}
+
+export function liveApi(token: string) {
+  return {
+    list: () => api<{ data?: LiveRoom[] }>(`/api/v1/live-rooms`, { token }),
+    detail: (id: string) => api<{ liveRoom?: LiveRoomDetail }>(`/api/v1/live-rooms/${id}`, { token }),
+    join: (id: string) =>
+      api<{ success?: boolean }>(`/api/v1/live-rooms/${id}/join`, { method: 'POST', token }),
+    leave: (id: string) =>
+      api<{ success?: boolean }>(`/api/v1/live-rooms/${id}/leave`, { method: 'POST', token }),
+    sendMessage: (id: string, content: string) =>
+      api<{ success?: boolean; message?: LiveMessage }>(`/api/v1/live-rooms/${id}/messages`, {
+        method: 'POST',
+        body: { content },
+        token,
+      }),
+  };
+}
+
+export function instructorApi(token: string) {
+  return {
+    status: () => api<InstructorStatus>(`/api/v1/instructor/status`, { token }),
+    apply: (motivation?: string) =>
+      api<{ success?: boolean }>(`/api/v1/instructor/apply`, {
+        method: 'POST',
+        body: { motivation },
+        token,
+      }),
+    courses: () => api<{ data?: InstructorCourse[] }>(`/api/v1/instructor/courses`, { token }),
   };
 }

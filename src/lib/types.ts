@@ -96,6 +96,8 @@ export type ExamSubmitResponse = {
   totalQuestions: number;
   percentage: number;
   finishedAt: string;
+  xpAwarded?: number;
+  coinsAwarded?: number;
 };
 
 export type ExamHistoryEntry = {
@@ -266,6 +268,8 @@ export type LessonDetail = {
   content?: string | null;
   duration?: number | null;
   orderNumber?: number | null;
+  xpAwarded?: number;
+  coinsAwarded?: number;
 };
 
 export type VerifiedCertificate = {
@@ -274,4 +278,35 @@ export type VerifiedCertificate = {
   fullName?: string | null;
   issuedAt?: string | null;
   code?: string | null;
+};
+
+export type LiveRoom = {
+  id: string;
+  title: string;
+  description?: string | null;
+  status?: string | null;
+  scheduledAt?: string | null;
+  instructorName?: string | null;
+};
+
+export type LiveMessage = {
+  id: string;
+  userName?: string | null;
+  content: string;
+  createdAt?: string | null;
+};
+
+export type LiveRoomDetail = LiveRoom & {
+  messages?: LiveMessage[];
+};
+
+export type InstructorStatus = {
+  isInstructor?: boolean;
+  pending?: boolean;
+};
+
+export type InstructorCourse = {
+  id: string;
+  title: string;
+  status?: string | null;
 };
