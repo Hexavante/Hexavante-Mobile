@@ -30,6 +30,7 @@ export default function PerfilScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<XpProfile | null>(null);
   const [equippedTitle, setEquippedTitle] = useState<string | null>(null);
+  const [equippedBadge, setEquippedBadge] = useState<string | null>(null);
   const [avatarBorderColor, setAvatarBorderColor] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,6 +46,8 @@ export default function PerfilScreen() {
           (e) => e.isEquipped && e.item.category === 'TITLE' && e.item.metadata?.titleText,
         );
         if (titleEntry?.item.metadata?.titleText) setEquippedTitle(titleEntry.item.metadata.titleText);
+        const badgeEntry = items.find((e) => e.isEquipped && e.item.category === 'BADGE');
+        if (badgeEntry) setEquippedBadge(badgeEntry.item.name);
         const borderEntry = items.find(
           (e) => e.isEquipped && e.item.category === 'AVATAR_BORDER' && e.item.metadata?.borderId,
         );
@@ -63,10 +66,20 @@ export default function PerfilScreen() {
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         {user?.username ? <Text style={styles.username}>@{user.username}</Text> : null}
-        {equippedTitle ? (
-          <View style={styles.titleChip}>
-            <Award size={12} color={P.gold} />
-            <Text style={styles.titleChipText}>{equippedTitle}</Text>
+        {equippedTitle || equippedBadge ? (
+          <View style={styles.chipsRow}>
+            {equippedTitle ? (
+              <View style={styles.titleChip}>
+                <Award size={12} color={P.gold} />
+                <Text style={styles.titleChipText}>{equippedTitle}</Text>
+              </View>
+            ) : null}
+            {equippedBadge ? (
+              <View style={styles.titleChip}>
+                <Medal size={12} color={P.amber} />
+                <Text style={styles.titleChipText}>{equippedBadge}</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
       </Card>
@@ -254,11 +267,18 @@ function makeStyles(P: AppPalette) {
       color: P.highlight,
       fontWeight: '600',
     },
+    chipsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 8,
+    },
     titleChip: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      marginTop: 8,
       paddingHorizontal: 10,
       paddingVertical: 4,
       borderRadius: Radius.full,

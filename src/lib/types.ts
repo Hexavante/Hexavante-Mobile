@@ -163,6 +163,7 @@ export type ShopState = {
   premium: boolean;
   premiumExpiresAt: string | null;
   coinHistory?: CoinHistoryEntry[];
+  booster?: { active: boolean; multiplier: number; expiresAt: string | null };
 };
 
 export type InventoryEntry = {

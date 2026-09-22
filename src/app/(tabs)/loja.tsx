@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Text, View, StyleSheet } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import { Ban, BarChart3, Coins, Crown, ShoppingCart, Sparkles } from 'lucide-react-native';
+import { Ban, BarChart3, Coins, Crown, ShoppingCart, Sparkles, Zap } from 'lucide-react-native';
 
 import { useToken } from '@/hooks/use-token';
 import { shopApi } from '@/lib/features';
@@ -62,6 +62,19 @@ function formatShortDate(value: string | null | undefined): string | null {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
+function formatBoosterExpiry(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const short = d.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `até ${short.replace(',', '')}`;
+}
+
 export default function LojaScreen() {
   const P = usePalette();
   const styles = useMemo(() => makeStyles(P), [P]);
@@ -72,6 +85,7 @@ export default function LojaScreen() {
   const [premium, setPremium] = useState(false);
   const [premiumExpiresAt, setPremiumExpiresAt] = useState<string | null>(null);
   const [coinHistory, setCoinHistory] = useState<CoinHistoryEntry[] | null>(null);
+  const [booster, setBooster] = useState<{ active: boolean; multiplier: number; expiresAt: string | null } | null>(null);
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [trialLoading, setTrialLoading] = useState(false);
@@ -102,6 +116,7 @@ export default function LojaScreen() {
         setPremium(state.premium ?? false);
         setPremiumExpiresAt(state.premiumExpiresAt ?? null);
         setCoinHistory(state.coinHistory ?? null);
+        setBooster(state.booster ?? null);
       })
       .catch(() => setError(true))
       .finally(() => setRefreshing(false));
@@ -190,6 +205,7 @@ export default function LojaScreen() {
   if (!items || coins === null || !filteredItems) return <Loading label="Carregando loja..." />;
 
   const premiumDateLabel = formatPremiumDate(premiumExpiresAt);
+  const boosterExpiryLabel = formatBoosterExpiry(booster?.expiresAt ?? null);
 
   return (
     <Screen scrollable={false} contentContainerStyle={{ padding: 0 }}>
@@ -210,6 +226,19 @@ export default function LojaScreen() {
         }
         ListHeaderComponent={
           <>
+            {booster?.active ? (
+              <Card style={styles.boosterCard}>
+                <View style={styles.boosterRow}>
+                  <Zap size={18} color={P.amber} />
+                  <View style={styles.boosterTexts}>
+                    <Text style={styles.boosterTitle}>
+                      Booster x{booster.multiplier} ativo{boosterExpiryLabel ? ` ${boosterExpiryLabel}` : ''}
+                    </Text>
+                    <Text style={styles.boosterSub}>Ganhos de XP e moedas multiplicados</Text>
+                  </View>
+                </View>
+              </Card>
+            ) : null}
             <Card style={styles.premiumCard}>
               <View style={styles.premiumChip}>
                 <Crown size={12} color={P.gold} />
@@ -413,6 +442,30 @@ export default function LojaScreen() {
 
 function makeStyles(P: AppPalette) {
   return StyleSheet.create({
+  boosterCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderColor: 'rgba(251,191,36,0.35)',
+    backgroundColor: 'rgba(251,191,36,0.08)',
+  },
+  boosterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  boosterTexts: {
+    flex: 1,
+    gap: 2,
+  },
+  boosterTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: P.text,
+  },
+  boosterSub: {
+    fontSize: 12,
+    color: P.textMuted,
+  },
   premiumCard: {
     marginHorizontal: 16,
     marginBottom: 12,
