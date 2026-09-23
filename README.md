@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hexavante/Hexavante-Mobile/releases/tag/v1.0.0-debug">
-    <img src="https://img.shields.io/badge/⬇_Baixar_APK-v1.0.0-22d3ee?style=for-the-badge&labelColor=0f172a" alt="Baixar APK" />
+  <a href="https://github.com/Hexavante/Hexavante-Mobile/releases/tag/v1.1.0-debug">
+    <img src="https://img.shields.io/badge/⬇_Baixar_APK-v1.1.0-22d3ee?style=for-the-badge&labelColor=0f172a" alt="Baixar APK" />
   </a>
 </p>
 
@@ -40,7 +40,7 @@
 
 | Versão | Tipo | Download |
 |---|---|---|
-| **v1.0.0-debug** | APK (Android 8+) | [⬇ hexavante-v1.0.0-debug.apk](https://github.com/Hexavante/Hexavante-Mobile/releases/download/v1.0.0-debug/hexavante-v1.0.0-debug.apk) |
+| **v1.1.0-debug** | APK (Android 8+) | [⬇ hexavante-v1.0.0-debug.apk](https://github.com/Hexavante/Hexavante-Mobile/releases/download/v1.1.0-debug/hexavante-v1.1.0-debug.apk) |
 
 **Instalação:**
 1. Baixe o APK no celular
