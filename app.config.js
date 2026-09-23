@@ -2,7 +2,7 @@
 module.exports = {
   name: 'Hexavante',
   slug: 'hexavante',
-  version: '1.0.0',
+  version: '1.1.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'hexavante',
@@ -15,7 +15,7 @@ module.exports = {
   },
   android: {
     package: 'br.com.hexavante.app',
-    versionCode: 1,
+    versionCode: 2,
     adaptiveIcon: {
       backgroundColor: '#06080f',
       foregroundImage: './assets/images/android-icon-foreground.png',
