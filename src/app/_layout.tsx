@@ -7,8 +7,8 @@ import type { Notification } from 'expo-notifications';
 
 import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider as AppThemeProvider, usePalette, useThemeChoice } from '@/lib/theme-context';
+import { useServerThemeSync } from '@/hooks/use-server-theme-sync';
 import {
-  registerForPushNotifications,
   addNotificationListener,
 } from '@/lib/notifications';
 
@@ -17,6 +17,7 @@ const LIGHT_THEMES = new Set(['snow', 'daylight', 'cream', 'pearl']);
 function ThemedApp() {
   const P = usePalette();
   const { themeId } = useThemeChoice();
+  useServerThemeSync();
 
   const navTheme = useMemo(
     () => ({
@@ -71,16 +72,8 @@ export default function RootLayout() {
   const notificationListener = useRef<ReturnType<typeof addNotificationListener> | null>(null);
 
   useEffect(() => {
-    registerForPushNotifications()
-      .then((token) => {
-        if (token) {
-          // TODO: send token to backend POST /api/v1/notifications/register
-        }
-      })
-      .catch(() => {
-        // push indisponível (Expo Go sem projectId, emulador, etc.)
-      });
-
+    // Push token é registrado com sessão em useServerThemeSync (pós-login).
+    // Aqui só mantemos os listeners de recebimento/toque.
     notificationListener.current = addNotificationListener({
       onReceive: (notification: Notification) => {
         // handle foreground notification (e.g. in-app banner)

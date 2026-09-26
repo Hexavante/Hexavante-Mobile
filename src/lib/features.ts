@@ -109,6 +109,8 @@ export function notificationsApi(token: string) {
     },
     markRead: (id: string) => api<{ success: boolean }>(`/api/v1/notifications/${id}/read`, { method: 'PATCH', token }),
     markAllRead: () => api<{ success: boolean; count: number }>('/api/v1/notifications/read-all', { method: 'PATCH', token }),
+    registerPush: (expoToken: string, deviceName?: string) =>
+      api<{ success: boolean }>('/api/v1/notifications/register', { method: 'POST', body: { expoToken, deviceName }, token }),
   };
 }
 
