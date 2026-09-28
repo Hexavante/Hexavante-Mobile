@@ -226,7 +226,7 @@ function makeStyles(P: AppPalette) {
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: P.border,
-      backgroundColor: 'rgba(255,255,255,0.04)',
+      backgroundColor: P.skeleton,
     },
     hudCard: {
       marginBottom: 24,

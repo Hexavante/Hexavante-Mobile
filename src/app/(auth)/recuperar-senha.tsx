@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
+import { BrandLogo } from '@/components/brand-logo';
 import { Link, useRouter } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
@@ -97,11 +98,7 @@ export default function RecuperarSenhaScreen() {
         style={styles.inner}
       >
         <View style={styles.brandBox}>
-          <Image
-            source={require('@/assets/images/hexavante-logo.webp')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <BrandLogo style={styles.logo} />
           <Text style={styles.title}>Recuperar senha</Text>
           <Text style={styles.subtitle}>
             {step === 1

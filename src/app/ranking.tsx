@@ -154,7 +154,7 @@ function makeStyles(P: AppPalette) {
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: P.skeleton,
   },
   posText: {
     color: P.textMuted,
@@ -173,7 +173,7 @@ function makeStyles(P: AppPalette) {
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: P.skeleton,
   },
   avatarText: {
     color: P.textMuted,

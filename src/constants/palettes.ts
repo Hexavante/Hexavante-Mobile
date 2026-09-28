@@ -13,6 +13,7 @@ export type AppPalette = {
   highlight: string;
   highlightSoft: string;
   highlightBorder: string;
+  onHighlight: string;
   cyan: string;
   sky: string;
   violet: string;
@@ -42,6 +43,7 @@ type Base = {
   text: string;
   highlight: string;
   cyan?: string;
+  onHighlight?: string;
 };
 
 function build(base: Base): AppPalette {
@@ -58,6 +60,7 @@ function build(base: Base): AppPalette {
     highlight: base.highlight,
     highlightSoft: alpha(base.highlight, 0.12),
     highlightBorder: alpha(base.highlight, 0.28),
+    onHighlight: base.onHighlight ?? '#ffffff',
     cyan,
     sky: '#38bdf8',
     violet: '#a78bfa',
@@ -99,6 +102,7 @@ export const PALETTES: Record<string, AppPalette> = {
     text: '#f8fafc',
     highlight: '#22d3ee',
     cyan: '#22d3ee',
+    onHighlight: '#062033',
   }),
   cyberpunk: build({
     bg: '#0c0614',

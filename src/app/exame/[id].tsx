@@ -390,7 +390,7 @@ export default function ExameDetailScreen() {
               onPress={() => void handleSubmit()}
               style={styles.navBtn}
             >
-              <CheckCircle size={16} color="#062033" />
+              <CheckCircle size={16} color={P.onHighlight} />
             </Button>
           ) : (
             <Button
@@ -501,7 +501,7 @@ function makeStyles(P: AppPalette) {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: P.skeleton,
     borderWidth: 1,
     borderColor: P.border,
     borderRadius: Radius.sm,
@@ -580,7 +580,7 @@ function makeStyles(P: AppPalette) {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: P.skeleton,
     borderWidth: 1,
     borderColor: P.border,
     borderRadius: Radius.md,

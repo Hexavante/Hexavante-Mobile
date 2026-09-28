@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
+import { BrandLogo } from '@/components/brand-logo';
 import { Link } from 'expo-router';
 
 import { useAuth } from '@/lib/auth-context';
@@ -46,11 +47,7 @@ export default function LoginScreen() {
         style={styles.inner}
       >
         <View style={styles.brandBox}>
-          <Image
-            source={require('@/assets/images/hexavante-logo.webp')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <BrandLogo style={styles.logo} />
           <Text style={styles.title}>HEXAVANTE</Text>
           <Text style={styles.subtitle}>Plataforma de estudos</Text>
         </View>

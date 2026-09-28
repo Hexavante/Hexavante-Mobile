@@ -37,7 +37,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             borderRadius: Radius.md,
             borderWidth: 1,
             borderColor: error ? P.red : P.border,
-            backgroundColor: 'rgba(255,255,255,0.04)',
+            backgroundColor: P.skeleton,
             paddingHorizontal: 14,
             fontSize: 15,
             color: P.text,

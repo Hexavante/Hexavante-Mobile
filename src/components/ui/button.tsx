@@ -25,9 +25,9 @@ export type ButtonProps = PressableProps & {
 
 function makeVariants(P: AppPalette): Record<Variant, { bg: string; color: string; border?: string }> {
   return {
-    primary: { bg: P.highlight, color: '#062033' },
+    primary: { bg: P.highlight, color: P.onHighlight },
     secondary: {
-      bg: 'rgba(255,255,255,0.06)',
+      bg: P.skeleton,
       color: P.text,
       border: P.border,
     },

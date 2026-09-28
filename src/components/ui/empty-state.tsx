@@ -39,7 +39,7 @@ function makeStyles(P: AppPalette) {
       borderWidth: 1,
       borderStyle: 'dashed',
       borderColor: P.border,
-      backgroundColor: 'rgba(255,255,255,0.02)',
+      backgroundColor: P.skeleton,
     },
     iconBox: {
       width: 56,
