@@ -34,7 +34,7 @@ module.exports = {
       'expo-splash-screen',
       {
         backgroundColor: '#06080f',
-        image: './assets/images/hexavante-logo.png',
+        image: './assets/images/hexavante-logo.webp',
         imageWidth: 160,
       },
     ],

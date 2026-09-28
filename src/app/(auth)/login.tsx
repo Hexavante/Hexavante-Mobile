@@ -47,7 +47,7 @@ export default function LoginScreen() {
       >
         <View style={styles.brandBox}>
           <Image
-            source={require('@/assets/images/hexavante-logo.png')}
+            source={require('@/assets/images/hexavante-logo.webp')}
             style={styles.logo}
             resizeMode="contain"
           />
