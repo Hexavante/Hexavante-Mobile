@@ -12,7 +12,9 @@ import {
   verifyDeviceCode,
   type AuthSession,
   type RegisterData,
+  type SocialProvider,
 } from '@/lib/api';
+import { signInWithSocial as signInWithSocialFlow } from '@/lib/social-auth';
 
 export type PendingVerification = {
   verificationId: string;
@@ -24,6 +26,7 @@ type AuthContextValue = {
   loading: boolean;
   pendingVerification: PendingVerification | null;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithSocial: (provider: SocialProvider) => Promise<void>;
   signUp: (data: RegisterData) => Promise<void>;
   verifyCode: (code: string) => Promise<void>;
   resendCode: () => Promise<void>;
@@ -72,6 +75,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       throw e;
     }
+  }, []);
+
+  // Login social: sem verificação de dispositivo neste fluxo (OAuth é
+  // autenticação forte). O helper já grava o token — regravar é idempotente e
+  // mantém este fluxo simétrico com signIn() (setToken + setUser).
+  const signInWithSocial = useCallback(async (provider: SocialProvider) => {
+    const session = await signInWithSocialFlow(provider);
+    await setToken(session.token);
+    setUser(session.user);
   }, []);
 
   const signUp = useCallback(async (data: RegisterData) => {
@@ -123,13 +135,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       pendingVerification,
       signIn,
+      signInWithSocial,
       signUp,
       verifyCode,
       resendCode,
       cancelVerification,
       signOut,
     }),
-    [user, loading, pendingVerification, signIn, signUp, verifyCode, resendCode, cancelVerification, signOut],
+    [user, loading, pendingVerification, signIn, signInWithSocial, signUp, verifyCode, resendCode, cancelVerification, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

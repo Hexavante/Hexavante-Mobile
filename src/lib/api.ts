@@ -213,8 +213,41 @@ export async function getSession(token: string): Promise<{ user: AuthSession['us
   return { user: normalizeUser(res.user) };
 }
 
-export function socialAuthUrl(provider: 'google' | 'github'): string {
-  return `${API_BASE_URL}/api/auth/sign-in/social?provider=${provider}&callbackURL=${encodeURIComponent(APP_URL)}`;
+// --- Login social (OAuth) -------------------------------------------------
+// Fluxo: browser abre buildSocialAuthUrl(provider, redirectUri) → o provider
+// autentica → a API devolve redirectUri?code=<oneTimeCode> (TTL 120s, 1 uso)
+// → trocamos o code por sessão via exchangeSocialCode().
+
+export type SocialProvider = 'google' | 'microsoft' | 'github' | 'discord';
+
+// Ordem de exibição nos botões sociais (Google, Microsoft, GitHub, Discord).
+export const SOCIAL_PROVIDERS: readonly SocialProvider[] = ['google', 'microsoft', 'github', 'discord'];
+
+export function buildSocialAuthUrl(provider: SocialProvider, redirectUri: string): string {
+  return `${API_BASE_URL}/oauth/${provider}?callbackURL=${encodeURIComponent(redirectUri)}`;
+}
+
+export type SocialSession = { token: string; user: AuthSession['user'] };
+
+export async function exchangeSocialCode(code: string): Promise<SocialSession> {
+  const res = await fetch(`${API_BASE_URL}/oauth/exchange`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    token?: string;
+    user?: ApiUser;
+    message?: string;
+    error?: string;
+  };
+
+  if (!res.ok || !data.token || !data.user) {
+    throw new ApiError(res.status, data.message || data.error || 'Não foi possível entrar com a conta social.');
+  }
+
+  return { token: data.token, user: normalizeUser(data.user) };
 }
 
 export async function requestPasswordReset(email: string): Promise<string | null> {

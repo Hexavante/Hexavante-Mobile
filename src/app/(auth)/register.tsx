@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
-import { BrandLogo } from '@/components/brand-logo';
-import { Link } from 'expo-router';
+import { KeyboardAvoidingView, Platform, Pressable, Text, View, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { useAuth } from '@/lib/auth-context';
 import { errorFeedback } from '@/lib/haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { VerifyCodeForm } from '@/components/auth/verify-code';
+import { EmailDivider, SocialAuthButtons } from '@/components/auth/social-auth-buttons';
+import { isSocialAuthCancelled } from '@/lib/social-auth';
 import { Radius } from '@/constants/theme';
 import { usePalette } from '@/lib/theme-context';
 import type { AppPalette } from '@/constants/palettes';
+import type { SocialProvider } from '@/lib/api';
 
 function toISODate(br: string): string | null {
   const m = br.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -27,16 +30,21 @@ function toISODate(br: string): string | null {
 export default function RegisterScreen() {
   const P = usePalette();
   const styles = makeStyles(P);
-  const { signUp, pendingVerification } = useAuth();
+  const router = useRouter();
+  const { signUp, signInWithSocial, pendingVerification } = useAuth();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const busy = loading || socialLoading !== null;
+
   const handleSubmit = async () => {
+    if (busy) return;
     if (!name.trim() || !username.trim() || !birthDate.trim() || !email || !password) {
       setError('Preencha todos os campos.');
       void errorFeedback();
@@ -76,6 +84,22 @@ export default function RegisterScreen() {
     }
   };
 
+  const handleSocial = async (provider: SocialProvider) => {
+    if (busy) return;
+    setSocialLoading(provider);
+    setError(null);
+    try {
+      await signInWithSocial(provider);
+      // Conta criada/encontrada no provider → (auth)/_layout redireciona para /.
+    } catch (e) {
+      if (isSocialAuthCancelled(e)) return;
+      void errorFeedback();
+      setError(e instanceof Error && e.message ? e.message : 'Não foi possível entrar com a conta social.');
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
   return (
     <Screen contentContainerStyle={styles.content}>
       <KeyboardAvoidingView
@@ -85,7 +109,7 @@ export default function RegisterScreen() {
         <View style={styles.brandBox}>
           <BrandLogo style={styles.logo} />
           <Text style={styles.title}>Criar conta</Text>
-          <Text style={styles.subtitle}>Comece a estudar na Hexavante</Text>
+          <Text style={styles.subtitle}>Junte-se à plataforma Hexavante</Text>
         </View>
 
         <View style={styles.form}>
@@ -93,6 +117,9 @@ export default function RegisterScreen() {
             <VerifyCodeForm />
           ) : (
             <>
+              <SocialAuthButtons onPress={(p) => void handleSocial(p)} loadingProvider={socialLoading} />
+              <EmailDivider />
+
               <Input
                 label="Nome"
                 value={name}
@@ -123,8 +150,8 @@ export default function RegisterScreen() {
                 onChangeText={setEmail}
                 placeholder="voce@email.com"
                 autoCapitalize="none"
-                keyboardType="email-address"
                 autoComplete="email"
+                keyboardType="email-address"
                 textContentType="emailAddress"
               />
               <Input
@@ -137,18 +164,33 @@ export default function RegisterScreen() {
                 textContentType="newPassword"
               />
 
-              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.error}>{error}</Text>
+                </View>
+              ) : null}
 
-              <Button label="Criar conta" loading={loading} onPress={() => void handleSubmit()} size="lg" />
+              <Button
+                label="Criar conta"
+                loading={loading}
+                disabled={socialLoading !== null}
+                onPress={() => void handleSubmit()}
+                size="lg"
+              />
             </>
           )}
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Já tem conta?</Text>
-          <Link href="/login" style={styles.footerLink}>
-            Entrar
-          </Link>
+          <Pressable
+            onPress={() => router.push('/login')}
+            hitSlop={12}
+            accessibilityRole="link"
+            accessibilityLabel="Entrar"
+          >
+            <Text style={styles.footerLink}>Entrar</Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </Screen>
@@ -162,19 +204,19 @@ function makeStyles(P: AppPalette) {
       justifyContent: 'center',
     },
     inner: {
-      gap: 28,
+      gap: 24,
     },
     brandBox: {
       alignItems: 'center',
       gap: 6,
     },
     logo: {
-      width: 100,
-      height: 100,
-      marginBottom: 8,
+      width: 96,
+      height: 96,
+      marginBottom: 4,
     },
     title: {
-      fontSize: 26,
+      fontSize: 24,
       fontWeight: '900',
       letterSpacing: 1,
       color: P.text,
@@ -182,13 +224,23 @@ function makeStyles(P: AppPalette) {
     subtitle: {
       fontSize: 14,
       color: P.textMuted,
+      textAlign: 'center',
     },
     form: {
       gap: 14,
     },
+    errorBox: {
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: 'rgba(239,68,68,0.35)',
+      backgroundColor: 'rgba(239,68,68,0.12)',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
     error: {
-      color: '#fca5a5',
+      color: P.red,
       fontSize: 13,
+      fontWeight: '600',
       textAlign: 'center',
     },
     footer: {

@@ -1,28 +1,36 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View, StyleSheet } from 'react-native';
-import { BrandLogo } from '@/components/brand-logo';
-import { Link } from 'expo-router';
+import { KeyboardAvoidingView, Platform, Pressable, Text, View, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { useAuth } from '@/lib/auth-context';
 import { errorFeedback } from '@/lib/haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { VerifyCodeForm } from '@/components/auth/verify-code';
+import { EmailDivider, SocialAuthButtons } from '@/components/auth/social-auth-buttons';
+import { isSocialAuthCancelled } from '@/lib/social-auth';
 import { Radius } from '@/constants/theme';
 import { usePalette } from '@/lib/theme-context';
 import type { AppPalette } from '@/constants/palettes';
+import type { SocialProvider } from '@/lib/api';
 
 export default function LoginScreen() {
   const P = usePalette();
   const styles = makeStyles(P);
-  const { signIn, pendingVerification } = useAuth();
+  const router = useRouter();
+  const { signIn, signInWithSocial, pendingVerification } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const busy = loading || socialLoading !== null;
+
   const handleSubmit = async () => {
+    if (busy) return;
     if (!email || !password) {
       setError('Preencha e-mail e senha.');
       void errorFeedback();
@@ -40,6 +48,23 @@ export default function LoginScreen() {
     }
   };
 
+  const handleSocial = async (provider: SocialProvider) => {
+    if (busy) return;
+    setSocialLoading(provider);
+    setError(null);
+    try {
+      await signInWithSocial(provider);
+      // Sessão criada → (auth)/_layout redireciona para /.
+    } catch (e) {
+      // Usuário fechou o navegador: não mostra nada.
+      if (isSocialAuthCancelled(e)) return;
+      void errorFeedback();
+      setError(e instanceof Error && e.message ? e.message : 'Não foi possível entrar com a conta social.');
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
   return (
     <Screen contentContainerStyle={styles.content}>
       <KeyboardAvoidingView
@@ -49,7 +74,7 @@ export default function LoginScreen() {
         <View style={styles.brandBox}>
           <BrandLogo style={styles.logo} />
           <Text style={styles.title}>HEXAVANTE</Text>
-          <Text style={styles.subtitle}>Plataforma de estudos</Text>
+          <Text style={styles.subtitle}>Entre para continuar estudando</Text>
         </View>
 
         <View style={styles.form}>
@@ -57,41 +82,74 @@ export default function LoginScreen() {
             <VerifyCodeForm />
           ) : (
             <>
+              <SocialAuthButtons onPress={(p) => void handleSocial(p)} loadingProvider={socialLoading} />
+              <EmailDivider />
+
               <Input
                 label="E-mail"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(t) => {
+                  setEmail(t);
+                  if (error) setError(null);
+                }}
                 placeholder="voce@email.com"
                 autoCapitalize="none"
-                keyboardType="email-address"
                 autoComplete="email"
+                keyboardType="email-address"
                 textContentType="emailAddress"
               />
               <Input
                 label="Senha"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(t) => {
+                  setPassword(t);
+                  if (error) setError(null);
+                }}
                 placeholder="Sua senha"
                 secureTextEntry
-                autoComplete="password"
+                autoComplete="current-password"
                 textContentType="password"
+                returnKeyType="done"
+                onSubmitEditing={() => void handleSubmit()}
               />
 
-              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.error}>{error}</Text>
+                </View>
+              ) : null}
 
-              <Button label="Entrar" loading={loading} onPress={() => void handleSubmit()} size="lg" />
-              <Link href="/recuperar-senha" style={styles.forgotLink}>
-                Esqueci minha senha
-              </Link>
+              <Button
+                label="Entrar"
+                loading={loading}
+                disabled={socialLoading !== null}
+                onPress={() => void handleSubmit()}
+                size="lg"
+              />
+
+              <Pressable
+                onPress={() => router.push('/recuperar-senha')}
+                hitSlop={14}
+                style={styles.linkHit}
+                accessibilityRole="link"
+                accessibilityLabel="Esqueci minha senha"
+              >
+                <Text style={styles.forgotLink}>Esqueci minha senha</Text>
+              </Pressable>
             </>
           )}
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Não tem conta?</Text>
-          <Link href="/register" style={styles.footerLink}>
-            Criar conta
-          </Link>
+          <Pressable
+            onPress={() => router.push('/register')}
+            hitSlop={12}
+            accessibilityRole="link"
+            accessibilityLabel="Criar conta"
+          >
+            <Text style={styles.footerLink}>Criar conta</Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </Screen>
@@ -105,19 +163,19 @@ function makeStyles(P: AppPalette) {
       justifyContent: 'center',
     },
     inner: {
-      gap: 32,
+      gap: 24,
     },
     brandBox: {
       alignItems: 'center',
       gap: 6,
     },
     logo: {
-      width: 120,
-      height: 120,
-      marginBottom: 8,
+      width: 96,
+      height: 96,
+      marginBottom: 4,
     },
     title: {
-      fontSize: 26,
+      fontSize: 24,
       fontWeight: '900',
       letterSpacing: 2,
       color: P.text,
@@ -125,13 +183,23 @@ function makeStyles(P: AppPalette) {
     subtitle: {
       fontSize: 14,
       color: P.textMuted,
+      textAlign: 'center',
     },
     form: {
       gap: 14,
     },
+    errorBox: {
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: 'rgba(239,68,68,0.35)',
+      backgroundColor: 'rgba(239,68,68,0.12)',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
     error: {
-      color: '#fca5a5',
+      color: P.red,
       fontSize: 13,
+      fontWeight: '600',
       textAlign: 'center',
     },
     footer: {
@@ -144,9 +212,13 @@ function makeStyles(P: AppPalette) {
       color: P.textMuted,
       fontSize: 14,
     },
+    linkHit: {
+      alignSelf: 'center',
+    },
     forgotLink: {
       color: P.highlight,
       fontSize: 13,
+      fontWeight: '600',
       textAlign: 'center',
     },
     footerLink: {
